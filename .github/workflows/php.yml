@@ -44,5 +44,5 @@ jobs:
       uses: sudo-bot/action-scrutinizer@latest
       if: ${{ matrix.coverage }}
       with:
-        cli-args: --format=php-clover /tmp/clover.xml
+        cli-args: "--format=php-clover build/logs/clover.xml --revision=${{ github.event.pull_request.head.sha || github.sha }}"
 

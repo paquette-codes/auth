@@ -40,8 +40,9 @@ jobs:
     - name: Run PHPUnit
       run: vendor/bin/phpunit ${{ matrix.coverage }}
 
-    - name: Upload coverage to Scrutinizer
+    - name: Upload Scrutinizer coverage
+      uses: sudo-bot/action-scrutinizer@latest
       if: ${{ matrix.coverage }}
-      run: >
-        wget https://scrutinizer-ci.com/ocular.phar -O "/tmp/ocular.phar" &&
-        php "/tmp/ocular.phar" code-coverage:upload --format=php-clover /tmp/clover.xml
+      with:
+        cli-args: --format=php-clover /tmp/clover.xml
+

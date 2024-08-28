@@ -13,14 +13,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - php: 7.4
+          - php: 8.1
             composer: '--prefer-lowest'
             desc: "Lowest versions"
-          - php: 7.4
-            coverage: '--coverage-clover /tmp/clover.xml'
-          - php: 8.0
           - php: 8.1
           - php: 8.2
+            coverage: '--coverage-clover /tmp/clover.xml'
+          - php: 8.3
     name: PHP ${{ matrix.php }} ${{ matrix.desc }}
 
     steps:
@@ -36,7 +35,7 @@ jobs:
       run: composer validate
 
     - name: Install dependencies
-      run: composer update --prefer-dist --no-progress --no-suggest ${{ matrix.composer }}
+      run: composer update --prefer-dist --no-progress ${{ matrix.composer }}
 
     - name: Run PHPUnit
       run: vendor/bin/phpunit ${{ matrix.coverage }}

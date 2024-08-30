@@ -2,20 +2,24 @@
 
 namespace Jasny\Auth\Tests\Confirmation;
 
-use Carbon\CarbonImmutable;
+use DateTime;
+use DateTimeImmutable;
 use Hashids\Hashids;
 use Jasny\Auth\Confirmation\HashidsConfirmation;
 use Jasny\Auth\Confirmation\InvalidTokenException;
 use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Auth\UserInterface as User;
 use Jasny\PHPUnit\CallbackMockTrait;
+use Lcobucci\Clock\FrozenClock;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LoggerInterface as Logger;
+use RuntimeException;
 
 #[CoversClass(HashidsConfirmation::class)]
 class HashidsConfirmationTest extends TestCase
@@ -28,18 +32,13 @@ class HashidsConfirmationTest extends TestCase
 
     protected User & MockObject $user;
     protected Logger & MockObject $logger;
+    protected ClockInterface $clock;
 
     public function setUp(): void
     {
-        CarbonImmutable::setTestNow('2019-12-01T00:00:00+00:00');
-
         $this->user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'xyz']);
         $this->logger = $this->createMock(LoggerInterface::class);
-    }
-
-    public function tearDown(): void
-    {
-        CarbonImmutable::setTestNow(null);
+        $this->clock = new FrozenClock(new DateTimeImmutable('2019-12-01T00:00:00+00:00'));
     }
 
     public function expectedContext(?string $uid = null, ?string $expire = null): array
@@ -63,7 +62,7 @@ class HashidsConfirmationTest extends TestCase
             ->withStorage($storage)
             ->withSubject('test');
 
-        $token = $confirm->getToken($this->user, new \DateTime('2020-01-01T12:00:00+00:00'));
+        $token = $confirm->getToken($this->user, new DateTime('2020-01-01T12:00:00+00:00'));
 
         $this->assertEquals(self::TOKEN, $token);
     }
@@ -86,9 +85,10 @@ class HashidsConfirmationTest extends TestCase
         $confirm = (new HashidsConfirmation('secret', fn() => $hashids))
             ->withUidEncoded($encode, $decode)
             ->withStorage($storage)
-            ->withSubject('test');
+            ->withSubject('test')
+            ->withClock($this->clock);
 
-        $token = $confirm->getToken($this->user, new \DateTime('2020-01-01T12:00:00+00:00'));
+        $token = $confirm->getToken($this->user, new DateTime('2020-01-01T12:00:00+00:00'));
 
         $this->assertEquals(self::TOKEN, $token);
     }
@@ -107,11 +107,12 @@ class HashidsConfirmationTest extends TestCase
         $confirm = (new HashidsConfirmation('secret', fn() => $hashids))
             ->withUidEncoded($encode, $decode)
             ->withStorage($storage)
-            ->withSubject('test');
+            ->withSubject('test')
+            ->withClock($this->clock);
 
-        $this->expectExceptionObject(new \RuntimeException("Failed to encode uid"));
+        $this->expectExceptionObject(new RuntimeException("Failed to encode uid"));
 
-        $confirm->getToken($this->user, new \DateTime('2020-01-01T12:00:00+00:00'));
+        $confirm->getToken($this->user, new DateTime('2020-01-01T12:00:00+00:00'));
     }
 
     protected function createService(string $hex, ?User $user = null): HashidsConfirmation
@@ -135,7 +136,8 @@ class HashidsConfirmationTest extends TestCase
         return (new HashidsConfirmation('secret', fn() => $hashids))
             ->withStorage($storage)
             ->withLogger($this->logger)
-            ->withSubject('test');
+            ->withSubject('test')
+            ->withClock($this->clock);
     }
 
     public function testFrom(): void
@@ -265,7 +267,8 @@ class HashidsConfirmationTest extends TestCase
 
         $service = (new HashidsConfirmation('secret', $callback))
             ->withStorage($storage)
-            ->withSubject('test');
+            ->withSubject('test')
+            ->withClock($this->clock);
 
         $result = $service->createHashids();
 
@@ -281,7 +284,8 @@ class HashidsConfirmationTest extends TestCase
 
         $service = (new HashidsConfirmation('secret'))
             ->withStorage($storage)
-            ->withSubject('test');
+            ->withSubject('test')
+            ->withClock($this->clock);
 
         $hashids = $service->createHashids();
         $this->assertInstanceOf(Hashids::class, $hashids);
@@ -302,9 +306,10 @@ class HashidsConfirmationTest extends TestCase
 
         $confirm = (new HashidsConfirmation('secret'))
             ->withStorage($storage)
-            ->withSubject('test');
+            ->withSubject('test')
+            ->withClock($this->clock);
 
-        $token = $confirm->getToken($this->user, new \DateTime('2020-01-01T12:00:00+00:00'));
+        $token = $confirm->getToken($this->user, new DateTime('2020-01-01T12:00:00+00:00'));
 
         $expectedToken = self::TOKEN;
         $this->assertEquals($expectedToken, $token);
@@ -321,7 +326,8 @@ class HashidsConfirmationTest extends TestCase
 
         $confirm = (new HashidsConfirmation('secret'))
             ->withStorage($storage)
-            ->withSubject('test');
+            ->withSubject('test')
+            ->withClock($this->clock);
 
         $user = $confirm->from(self::TOKEN);
 
@@ -337,7 +343,8 @@ class HashidsConfirmationTest extends TestCase
 
         $confirm = (new HashidsConfirmation('secret'))
             ->withStorage($storage)
-            ->withSubject('foo-bar');
+            ->withSubject('foo-bar')
+            ->withClock($this->clock);
 
         $this->expectException(InvalidTokenException::class);
 

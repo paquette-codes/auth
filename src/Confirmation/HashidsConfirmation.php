@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Confirmation;
 
-use Carbon\CarbonImmutable;
 use Closure;
+use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use Exception;
 use Hashids\Hashids;
 use Jasny\Auth\UserInterface as User;
 use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Immutable;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface as Logger;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -37,6 +39,7 @@ class HashidsConfirmation implements ConfirmationInterface
     protected Closure $decodeUid;
 
     protected Logger $logger;
+    protected ClockInterface $clock;
 
     /**
      * HashidsConfirmation constructor.
@@ -59,17 +62,30 @@ class HashidsConfirmation implements ConfirmationInterface
         $this->decodeUid = fn(string $hex) => pack('H*', $hex);
 
         $this->logger = new NullLogger();
+
+        $this->clock = new class () implements ClockInterface
+        {
+            public function now(): DateTimeImmutable
+            {
+                return new DateTimeImmutable('now', new DateTimeZone('UTC'));
+            }
+        };
     }
 
     /**
      * Get copy with storage service.
-     *
-     * @param Storage $storage
-     * @return static
      */
-    public function withStorage(Storage $storage): self
+    public function withStorage(Storage $storage): static
     {
         return $this->withProperty('storage', $storage);
+    }
+
+    /**
+     * Get copy with clock service. Mainly used for testing.
+     */
+    public function withClock(ClockInterface $clock): static
+    {
+        return $this->withProperty('clock', $clock);
     }
 
     /**
@@ -105,7 +121,7 @@ class HashidsConfirmation implements ConfirmationInterface
     public function getToken(User $user, DateTimeInterface $expire): string
     {
         $uidHex = $this->encodeUid($user->getAuthId());
-        $expireHex = CarbonImmutable::instance($expire)->utc()->format('YmdHis');
+        $expireHex = self::utc($expire)->format('YmdHis');
         $checksum = $this->calcChecksum($user, $expire);
 
         return $this->createHashids()->encodeHex($checksum . $expireHex . $uidHex);
@@ -122,6 +138,7 @@ class HashidsConfirmation implements ConfirmationInterface
     public function from(string $token): User
     {
         $hex = $this->createHashids()->decodeHex($token);
+        /** @var null|array{checksum:string,expire:DateTimeImmutable,uid:string} $info */
         $info = $this->extractHex($hex);
 
         $context = ['subject' => $this->subject, 'token' => self::partialToken($token)];
@@ -148,7 +165,7 @@ class HashidsConfirmation implements ConfirmationInterface
      * Extract uid, expire date and checksum from hex.
      *
      * @param string $hex
-     * @return null|array{checksum:string,expire:CarbonImmutable,uid:string}
+     * @return null|array{checksum:string,expire:DateTimeImmutable,uid:string}
      */
     protected function extractHex(string $hex): ?array
     {
@@ -162,14 +179,12 @@ class HashidsConfirmation implements ConfirmationInterface
 
         try {
             $uid = $this->decodeUid($uidHex);
-
-            /** @var CarbonImmutable $expire */
-            $expire = CarbonImmutable::createFromFormat('YmdHis', $expireHex, '+00:00');
+            $expire = DateTimeImmutable::createFromFormat('YmdHis', $expireHex, new DateTimeZone('UTC'));
         } catch (Exception $exception) {
             return null;
         }
 
-        if ($expire->format('YmdHis') !== $expireHex) {
+        if ($expire === false || $expire->format('YmdHis') !== $expireHex) {
             return null;
         }
 
@@ -227,39 +242,35 @@ class HashidsConfirmation implements ConfirmationInterface
     /**
      * Check that the checksum from the token matches the expected checksum.
      *
-     * @param string          $checksum
-     * @param User            $user
-     * @param CarbonImmutable $expire
-     * @param string[]        $context
+     * @param string            $checksum
+     * @param User              $user
+     * @param DateTimeInterface $expire
+     * @param string[]          $context
      * @throws InvalidTokenException
      */
-    protected function verifyChecksum(string $checksum, User $user, CarbonImmutable $expire, array $context): void
+    protected function verifyChecksum(string $checksum, User $user, DateTimeInterface $expire, array $context): void
     {
         $expected = $this->calcChecksum($user, $expire);
 
-        if ($checksum === $expected) {
-            return;
+        if ($checksum !== $expected) {
+            $this->logger->debug('Invalid confirmation token: bad checksum', $context);
+            throw new InvalidTokenException("Token has been revoked");
         }
-
-        $this->logger->debug('Invalid confirmation token: bad checksum', $context);
-        throw new InvalidTokenException("Token has been revoked");
     }
 
     /**
      * Check that the token isn't expired.
      *
-     * @param CarbonImmutable   $expire
+     * @param DateTimeInterface $expire
      * @param string[]          $context
      * @throws InvalidTokenException
      */
-    protected function verifyNotExpired(CarbonImmutable $expire, array $context): void
+    protected function verifyNotExpired(DateTimeInterface $expire, array $context): void
     {
-        if (!$expire->isPast()) {
-            return;
+        if ($expire < $this->clock->now()) {
+            $this->logger->debug('Expired confirmation token', $context);
+            throw new InvalidTokenException("Token is expired");
         }
-
-        $this->logger->debug('Expired confirmation token', $context);
-        throw new InvalidTokenException("Token is expired");
     }
 
 
@@ -269,7 +280,7 @@ class HashidsConfirmation implements ConfirmationInterface
     protected function calcChecksum(User $user, DateTimeInterface $expire): string
     {
         $parts = [
-            CarbonImmutable::instance($expire)->utc()->format('YmdHis'),
+            self::utc($expire)->format('YmdHis'),
             $user->getAuthId(),
             $user->getAuthChecksum(),
         ];
@@ -293,5 +304,15 @@ class HashidsConfirmation implements ConfirmationInterface
     protected static function partialToken(string $token): string
     {
         return substr($token, 0, 8) . '...';
+    }
+
+    /**
+     * Create a UTC date from a date.
+     */
+    protected static function utc(DateTimeInterface $date): DateTimeImmutable
+    {
+        return (new DateTimeImmutable())
+            ->setTimestamp($date->getTimestamp())
+            ->setTimezone(new DateTimeZone('UTC'));
     }
 }

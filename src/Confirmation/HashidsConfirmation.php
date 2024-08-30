@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Jasny\Auth\Confirmation;
 
 use Carbon\CarbonImmutable;
+use Closure;
+use DateTimeInterface;
+use Exception;
 use Hashids\Hashids;
 use Jasny\Auth\UserInterface as User;
 use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Immutable;
 use Psr\Log\LoggerInterface as Logger;
 use Psr\Log\NullLogger;
+use RuntimeException;
 
 /**
  * Generate and verify confirmation tokens using the Hashids library.
@@ -24,13 +28,13 @@ class HashidsConfirmation implements ConfirmationInterface
     protected string $subject;
     protected string $secret;
 
-    protected \Closure $createHashids;
+    protected Closure $createHashids;
     protected Storage $storage;
 
-    /** @phpstan-var \Closure&callable(string $uid):(string|false) */
-    protected \Closure $encodeUid;
-    /** @phpstan-var \Closure&callable(string $uid):(string|false) */
-    protected \Closure $decodeUid;
+    /** @phpstan-var Closure&callable(string $uid):(string|false) */
+    protected Closure $encodeUid;
+    /** @phpstan-var Closure&callable(string $uid):(string|false) */
+    protected Closure $decodeUid;
 
     protected Logger $logger;
 
@@ -45,7 +49,7 @@ class HashidsConfirmation implements ConfirmationInterface
         $this->secret = $secret;
 
         $this->createHashids = $createHashids !== null
-            ? \Closure::fromCallable($createHashids)
+            ? $createHashids(...)
             : fn(string $salt) => new Hashids($salt);
 
         $this->encodeUid = function (string $uid) {
@@ -70,36 +74,26 @@ class HashidsConfirmation implements ConfirmationInterface
 
     /**
      * Get a copy with custom methods to encode/decode the uid.
-     *
-     * @param callable $encode
-     * @param callable $decode
-     * @return static
      */
-    public function withUidEncoded(callable $encode, callable $decode): self
+    public function withUidEncoded(callable $encode, callable $decode): static
     {
         return $this
-            ->withProperty('encodeUid', \Closure::fromCallable($encode))
-            ->withProperty('decodeUid', \Closure::fromCallable($decode));
+            ->withProperty('encodeUid', $encode(...))
+            ->withProperty('decodeUid', $decode(...));
     }
 
     /**
      * Get copy with logger.
-     *
-     * @param Logger $logger
-     * @return static
      */
-    public function withLogger(Logger $logger): self
+    public function withLogger(Logger $logger): static
     {
         return $this->withProperty('logger', $logger);
     }
 
     /**
      * Create a copy of this service with a specific subject.
-     *
-     * @param string $subject
-     * @return static
      */
-    public function withSubject(string $subject): self
+    public function withSubject(string $subject): static
     {
         return $this->withProperty('subject', $subject);
     }
@@ -108,7 +102,7 @@ class HashidsConfirmation implements ConfirmationInterface
     /**
      * Generate a confirmation token.
      */
-    public function getToken(User $user, \DateTimeInterface $expire): string
+    public function getToken(User $user, DateTimeInterface $expire): string
     {
         $uidHex = $this->encodeUid($user->getAuthId());
         $expireHex = CarbonImmutable::instance($expire)->utc()->format('YmdHis');
@@ -137,7 +131,6 @@ class HashidsConfirmation implements ConfirmationInterface
             throw new InvalidTokenException("Invalid confirmation token");
         }
 
-        /** @var CarbonImmutable $expire */
         ['checksum' => $checksum, 'expire' => $expire, 'uid' => $uid] = $info;
         $context += ['user' => $uid, 'expire' => $expire->format('c')];
 
@@ -172,7 +165,7 @@ class HashidsConfirmation implements ConfirmationInterface
 
             /** @var CarbonImmutable $expire */
             $expire = CarbonImmutable::createFromFormat('YmdHis', $expireHex, '+00:00');
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return null;
         }
 
@@ -185,16 +178,13 @@ class HashidsConfirmation implements ConfirmationInterface
 
     /**
      * Encode the uid to a hex value.
-     *
-     * @param string $uid
-     * @return string
      */
     protected function encodeUid(string $uid): string
     {
         $hex = ($this->encodeUid)($uid);
 
         if ($hex === false) {
-            throw new \RuntimeException("Failed to encode uid");
+            throw new RuntimeException("Failed to encode uid");
         }
 
         return $hex;
@@ -202,16 +192,13 @@ class HashidsConfirmation implements ConfirmationInterface
 
     /**
      * Decode the uid to a hex value.
-     *
-     * @param string $hex
-     * @return string
      */
     protected function decodeUid(string $hex): string
     {
         $uid = ($this->decodeUid)($hex);
 
         if ($uid === false) {
-            throw new \RuntimeException("Failed to decode uid");
+            throw new RuntimeException("Failed to decode uid");
         }
 
         return $uid;
@@ -279,7 +266,7 @@ class HashidsConfirmation implements ConfirmationInterface
     /**
      * Calculate confirmation checksum.
      */
-    protected function calcChecksum(User $user, \DateTimeInterface $expire): string
+    protected function calcChecksum(User $user, DateTimeInterface $expire): string
     {
         $parts = [
             CarbonImmutable::instance($expire)->utc()->format('YmdHis'),
@@ -302,9 +289,6 @@ class HashidsConfirmation implements ConfirmationInterface
 
     /**
      * Create a partial token for logging.
-     *
-     * @param string $token
-     * @return string
      */
     protected static function partialToken(string $token): string
     {

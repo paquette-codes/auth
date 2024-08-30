@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Confirmation;
 
+use BadMethodCallException;
+use Closure;
+use DateTime;
+use DateTimeInterface;
+use InvalidArgumentException;
 use Jasny\Auth\Storage\TokenStorageInterface;
 use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Auth\UserInterface as User;
@@ -22,7 +27,7 @@ class TokenConfirmation implements ConfirmationInterface
     /** @var int<1, max> */
     protected int $numberOfBytes;
 
-    protected \Closure $encode;
+    protected Closure $encode;
 
     protected TokenStorageInterface $storage;
     protected Logger $logger;
@@ -38,7 +43,7 @@ class TokenConfirmation implements ConfirmationInterface
     public function __construct(int $numberOfBytes = 16, ?callable $encode = null)
     {
         if ($numberOfBytes < 1) {
-            throw new \InvalidArgumentException("Number of bytes must be at least 1");
+            throw new InvalidArgumentException("Number of bytes must be at least 1");
         }
 
         $this->numberOfBytes = $numberOfBytes;
@@ -56,7 +61,7 @@ class TokenConfirmation implements ConfirmationInterface
     public function withStorage(Storage $storage): static
     {
         if (!$storage instanceof TokenStorageInterface) {
-            throw new \InvalidArgumentException("Storage object needs to implement " . TokenStorageInterface::class);
+            throw new InvalidArgumentException("Storage object needs to implement " . TokenStorageInterface::class);
         }
 
         return $this->withProperty('storage', $storage);
@@ -81,10 +86,10 @@ class TokenConfirmation implements ConfirmationInterface
     /**
      * @inheritDoc
      */
-    public function getToken(User $user, \DateTimeInterface $expire): string
+    public function getToken(User $user, DateTimeInterface $expire): string
     {
         if (!isset($this->storage)) {
-            throw new \BadMethodCallException("Storage is not set");
+            throw new BadMethodCallException("Storage is not set");
         }
 
         $rawToken = random_bytes($this->numberOfBytes);
@@ -101,7 +106,7 @@ class TokenConfirmation implements ConfirmationInterface
     public function from(string $token): User
     {
         if (!isset($this->storage)) {
-            throw new \BadMethodCallException("Storage is not set");
+            throw new BadMethodCallException("Storage is not set");
         }
 
         $info = $this->storage->fetchToken($this->subject, $token);
@@ -113,7 +118,7 @@ class TokenConfirmation implements ConfirmationInterface
 
         ['uid' => $uid, 'expire' => $expire] = $info;
 
-        if ($expire <= new \DateTime()) {
+        if ($expire <= new DateTime()) {
             $this->logger->debug('Expired confirmation token', ['token' => $token, 'uid' => $uid]);
             throw new InvalidTokenException("Token is expired");
         }

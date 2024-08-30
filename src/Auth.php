@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Jasny\Auth;
 
+use Closure;
+use DateTimeImmutable;
+use DateTimeInterface;
 use Jasny\Auth\AuthzInterface as Authz;
 use Jasny\Auth\Confirmation\ConfirmationInterface as Confirmation;
 use Jasny\Auth\Confirmation\NoConfirmation;
@@ -14,9 +17,11 @@ use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Auth\User\PartiallyLoggedIn;
 use Jasny\Auth\UserInterface as User;
 use Jasny\Immutable;
+use LogicException;
 use Psr\EventDispatcher\EventDispatcherInterface as EventDispatcher;
 use Psr\Log\LoggerInterface as Logger;
 use Psr\Log\NullLogger;
+use RuntimeException;
 
 /**
  * Authentication and authorization.
@@ -35,7 +40,7 @@ class Auth implements Authz
     /**
      * Time when logged in.
      */
-    protected ?\DateTimeInterface $timestamp = null;
+    protected ?DateTimeInterface $timestamp = null;
 
     protected Session $session;
     protected Storage $storage;
@@ -47,8 +52,8 @@ class Auth implements Authz
     /** Allow service to be re-initialized */
     protected bool $forMultipleRequests = false;
 
-    /** @var \Closure&callable(User $user, string $code):bool */
-    protected \Closure $verifyMfa;
+    /** @var Closure&callable(User $user, string $code):bool */
+    protected Closure $verifyMfa;
 
     /**
      * Auth constructor.
@@ -70,7 +75,7 @@ class Auth implements Authz
      *
      * @return static
      */
-    public function forMultipleRequests(): self
+    public function forMultipleRequests(): static
     {
         return $this->withProperty('forMultipleRequests', true);
     }
@@ -78,7 +83,7 @@ class Auth implements Authz
     /**
      * Get a copy with an event dispatcher.
      */
-    public function withEventDispatcher(EventDispatcher $dispatcher): self
+    public function withEventDispatcher(EventDispatcher $dispatcher): static
     {
         return $this->withProperty('dispatcher', $dispatcher);
     }
@@ -86,7 +91,7 @@ class Auth implements Authz
     /**
      * Get a copy with a logger.
      */
-    public function withLogger(Logger $logger): self
+    public function withLogger(Logger $logger): static
     {
         return $this->withProperty('logger', $logger);
     }
@@ -100,14 +105,14 @@ class Auth implements Authz
     }
 
     /**
-     * Get a copy of the service with Multi Factor Authentication (MFA) support.
+     * Get a copy of the service with Multi-Factor Authentication (MFA) support.
      *
      * @param callable $verify  Callback to verify MFA.
      * @return static
      */
     public function withMfa(callable $verify): self
     {
-        return $this->withProperty('verifyMfa', \Closure::fromCallable($verify));
+        return $this->withProperty('verifyMfa', $verify(...));
     }
 
 
@@ -118,7 +123,7 @@ class Auth implements Authz
     {
         if ($this->isInitialized()) {
             if (!$this->forMultipleRequests) {
-                throw new \LogicException("Auth service is already initialized");
+                throw new LogicException("Auth service is already initialized");
             }
 
             $this->authz = $this->authz()->forUser(null)->inContextOf(null);
@@ -133,7 +138,7 @@ class Auth implements Authz
     /**
      * Get user and context from session, loading objects from storage.
      *
-     * @return array{user:User|null,context:Context|null,timestamp:\DateTimeInterface|null}
+     * @return array{user:User|null,context:Context|null,timestamp:DateTimeInterface|null}
      */
     protected function getInfoFromSession(): array
     {
@@ -145,7 +150,7 @@ class Auth implements Authz
         if ($uid === null || $uid instanceof User) {
             $user = $uid;
         } else {
-            if (substr($uid, 0, 9) === '#partial:') {
+            if (str_starts_with($uid, '#partial:')) {
                 $partial = true;
                 $uid = substr($uid, 9);
             }
@@ -185,12 +190,12 @@ class Auth implements Authz
     /**
      * Throw an exception if the service hasn't been initialized yet.
      *
-     * @throws \LogicException
+     * @throws LogicException
      */
     protected function assertInitialized(): void
     {
         if (!$this->isInitialized()) {
-            throw new \LogicException("Auth needs to be initialized before use");
+            throw new LogicException("Auth needs to be initialized before use");
         }
     }
 
@@ -217,7 +222,7 @@ class Auth implements Authz
 
     /**
      * Check if the current user is partially logged in.
-     * Typically this means MFA verification is required.
+     * Typically, this means MFA verification is required.
      */
     final public function isPartiallyLoggedIn(): bool
     {
@@ -274,7 +279,7 @@ class Auth implements Authz
     /**
      * Get the login timestamp.
      */
-    public function time(): ?\DateTimeInterface
+    public function time(): ?DateTimeInterface
     {
         return $this->timestamp;
     }
@@ -290,7 +295,7 @@ class Auth implements Authz
         $this->assertInitialized();
 
         if ($this->authz->isLoggedIn()) {
-            throw new \LogicException("Already logged in");
+            throw new LogicException("Already logged in");
         }
 
         if ($user->requiresMfa()) {
@@ -311,7 +316,7 @@ class Auth implements Authz
         $this->assertInitialized();
 
         if ($this->authz->isLoggedIn()) {
-            throw new \LogicException("Already logged in");
+            throw new LogicException("Already logged in");
         }
 
         $user = $this->storage->fetchUserByUsername($username);
@@ -339,8 +344,8 @@ class Auth implements Authz
      */
     private function loginUser(User $user): void
     {
-        $event = new Event\Login($this, $user);
-        $this->dispatcher->dispatch($event);
+        /** @var Event\Login $event */
+        $event = $this->dispatcher->dispatch(new Event\Login($this, $user));
 
         if ($event->isCancelled()) {
             if ($this->isPartiallyLoggedIn()) {
@@ -361,7 +366,7 @@ class Auth implements Authz
             $this->authz = $this->authz->inContextOf($context);
         }
 
-        $this->timestamp = new \DateTimeImmutable();
+        $this->timestamp = new DateTimeImmutable();
         $this->updateSession();
 
         $this->logger->info("Login successful", ['user' => $user->getAuthId()]);
@@ -374,8 +379,8 @@ class Auth implements Authz
      */
     private function partialLoginUser(User $user): void
     {
-        $event = new Event\PartialLogin($this, $user);
-        $this->dispatcher->dispatch($event);
+        /** @var Event\PartialLogin $event */
+        $event = $this->dispatcher->dispatch(new Event\PartialLogin($this, $user));
 
         if ($event->isCancelled()) {
             $this->logger->info("Login failed: " . $event->getCancellationReason(), ['user' => $user->getAuthId()]);
@@ -384,7 +389,7 @@ class Auth implements Authz
 
         // Beware; the `authz` property may have been changed via the partial login event.
         $this->authz = $this->authz->forUser(new PartiallyLoggedIn($user));
-        $this->timestamp = new \DateTimeImmutable();
+        $this->timestamp = new DateTimeImmutable();
         $this->updateSession();
 
         $this->logger->info("Partial login", ['user' => $user->getAuthId()]);
@@ -398,7 +403,7 @@ class Auth implements Authz
         $this->assertInitialized();
 
         if ($this->isLoggedOut()) {
-            throw new \RuntimeException("Unable to perform MFA verification: No user (partially) logged in");
+            throw new RuntimeException("Unable to perform MFA verification: No user (partially) logged in");
         }
 
         $authzUser = $this->user();
@@ -462,7 +467,7 @@ class Auth implements Authz
      *
      * @return $this
      */
-    public function recalc(): self
+    public function recalc(): static
     {
         $this->authz = $this->authz->recalc();
         $this->updateSession();
@@ -486,12 +491,11 @@ class Auth implements Authz
         $context = $this->authz->context();
 
         $uid = $user->getAuthId();
-        $cid = $context !== null ? $context->getAuthId() : null;
+        $cid = $context?->getAuthId();
         $checksum = $user->getAuthChecksum();
 
         $this->session->persist($uid, $cid, $checksum, $this->timestamp);
     }
-
 
     /**
      * Return read-only service for authorization of the current user and context.
@@ -525,7 +529,6 @@ class Auth implements Authz
         return $this->inContextOf(null);
     }
 
-
     /**
      * Get service to create or validate confirmation token.
      */
@@ -536,7 +539,6 @@ class Auth implements Authz
             ->withLogger($this->logger)
             ->withSubject($subject);
     }
-
 
     /**
      * Create an event dispatcher as null object.

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Session;
 
+use DateTimeInterface;
+use LogicException;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
@@ -42,18 +44,18 @@ class BearerAuth implements SessionInterface
 
     /**
      * @inheritDoc
-     * @throws \LogicException Since bearer authorization can't be modified server side.
+     * @throws LogicException Since bearer authorization can't be modified server side.
      */
-    public function persist($userId, $contextId, ?string $checksum, ?\DateTimeInterface $timestamp): void
+    public function persist(mixed $userId, mixed $contextId, ?string $checksum, ?DateTimeInterface $timestamp): void
     {
-        throw new \LogicException("Unable to persist auth info when using bearer authorization");
+        throw new LogicException("Unable to persist auth info when using bearer authorization");
     }
 
     /**
-     * @throws \LogicException Since bearer authorization can't be modified server side.
+     * @throws LogicException Since bearer authorization can't be modified server side.
      */
     public function clear(): void
     {
-        throw new \LogicException("Unable to persist auth info when using bearer authorization");
+        throw new LogicException("Unable to persist auth info when using bearer authorization");
     }
 }

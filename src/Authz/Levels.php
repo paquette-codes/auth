@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Authz;
 
+use DomainException;
 use Improved as i;
 use Improved\IteratorPipeline\Pipeline;
 use Jasny\Auth\AuthzInterface;
@@ -11,6 +12,7 @@ use Jasny\Auth\AuthzInterface as Authz;
 use Jasny\Auth\ContextInterface as Context;
 use Jasny\Auth\User\PartiallyLoggedIn;
 use Jasny\Auth\UserInterface as User;
+use UnexpectedValueException;
 
 /**
  * Authorize by access level.
@@ -54,12 +56,8 @@ class Levels implements AuthzInterface
     /**
      * Get a copy of the service with a modified property and recalculated
      * Returns $this if authz hasn't changed.
-     *
-     * @param string $property
-     * @param string $value
-     * @return static
      */
-    protected function withProperty(string $property, $value): self
+    protected function withProperty(string $property, mixed $value): static
     {
         $clone = clone $this;
         $clone->{$property} = $value;
@@ -99,10 +97,8 @@ class Levels implements AuthzInterface
     /**
      * Get a copy, recalculating the authz level of the user.
      * Returns $this if authz hasn't changed.
-     *
-     * @return static
      */
-    public function recalc(): self
+    public function recalc(): static
     {
         $clone = clone $this;
         $clone->calcUserLevel();
@@ -113,7 +109,7 @@ class Levels implements AuthzInterface
     /**
      * Get access level of the current user.
      *
-     * @throws \DomainException for unknown level names
+     * @throws DomainException for unknown level names
      */
     private function calcUserLevel(): void
     {
@@ -127,11 +123,11 @@ class Levels implements AuthzInterface
         $role = i\type_check(
             $this->user->getAuthRole($this->context),
             ['int', 'string'],
-            new \UnexpectedValueException("For authz levels the role should be string|int, %s returned (uid:$uid)")
+            new UnexpectedValueException("For authz levels the role should be string|int, %s returned (uid:$uid)")
         );
 
         if (is_string($role) && !isset($this->levels[$role])) {
-            throw new \DomainException("Authorization level '$role' isn't defined (uid:$uid)");
+            throw new DomainException("Authorization level '$role' isn't defined (uid:$uid)");
         }
 
         $this->userLevel = is_string($role) ? $this->levels[$role] : (int)$role;

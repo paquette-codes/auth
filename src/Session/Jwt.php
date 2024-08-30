@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Session;
 
+use DateInterval;
+use DateTime;
 use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
 use Jasny\Auth\Session\Jwt\Cookie;
 use Jasny\Auth\Session\Jwt\CookieInterface;
 use Jasny\Immutable;
@@ -73,7 +77,7 @@ class Jwt implements SessionInterface
 
         $timestamp = $token->headers()->get('iat');
         if (is_array($timestamp)) {
-            $timestamp = new \DateTimeImmutable($timestamp['date'], new \DateTimeZone($timestamp['timezone']));
+            $timestamp = new DateTimeImmutable($timestamp['date'], new DateTimeZone($timestamp['timezone']));
         }
 
         return [
@@ -87,18 +91,16 @@ class Jwt implements SessionInterface
     /**
      * @inheritDoc
      */
-    public function persist($userId, $contextId, ?string $checksum, ?\DateTimeInterface $timestamp): void
+    public function persist(mixed $userId, mixed $contextId, ?string $checksum, ?DateTimeInterface $timestamp): void
     {
-        $builder = clone $this->jwtConfig->builder();
-
-        if ($timestamp instanceof \DateTime) {
-            $timestamp = \DateTimeImmutable::createFromMutable($timestamp);
+        if ($timestamp instanceof DateTime) {
+            $timestamp = DateTimeImmutable::createFromMutable($timestamp);
         }
         /** @var DateTimeImmutable|null $timestamp */
-        $time = $timestamp ?? new \DateTimeImmutable();
-        $expire = $time->add(new \DateInterval("PT{$this->ttl}S"));
+        $time = $timestamp ?? new DateTimeImmutable();
+        $expire = $time->add(new DateInterval("PT{$this->ttl}S"));
 
-        $builder
+        $builder = clone $this->jwtConfig->builder()
             ->withClaim('user', $userId)
             ->withClaim('context', $contextId)
             ->withClaim('checksum', $checksum)
@@ -106,7 +108,7 @@ class Jwt implements SessionInterface
             ->expiresAt($expire);
 
         if ($timestamp !== null) {
-            $builder->withHeader('iat', $timestamp);
+            $builder = $builder->withHeader('iat', $timestamp);
         }
 
         $this->cookie->set(

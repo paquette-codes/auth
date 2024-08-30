@@ -6,15 +6,14 @@ use Jasny\Auth\Auth;
 use Jasny\Auth\AuthzInterface as Authz;
 use Jasny\Auth\AuthMiddleware;
 use Jasny\PHPUnit\CallbackMockTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface as ServerRequest;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\StreamInterface as Stream;
 
-/**
- * @covers \Jasny\Auth\AuthMiddleware
- */
+#[CoversClass(AuthMiddleware::class)]
 class AuthMiddlewareDoublePassTest extends TestCase
 {
     use CallbackMockTrait;

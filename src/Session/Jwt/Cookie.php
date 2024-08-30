@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Session\Jwt;
 
+use RuntimeException;
+
 /**
  * Use global `$_COOKIE` and `setcookie()` for the JWT cookie.
  *
@@ -47,7 +49,7 @@ class Cookie implements CookieInterface
         $success = setcookie($this->name, $value, ['expire' => $expire] + $this->options);
 
         if (!$success) {
-            throw new \RuntimeException("Failed to set cookie '{$this->name}'");
+            throw new RuntimeException("Failed to set cookie '{$this->name}'");
         }
 
         $_COOKIE[$this->name] = $value;
@@ -61,7 +63,7 @@ class Cookie implements CookieInterface
         $success = setcookie($this->name, '', ['expire' => 1] +  $this->options);
 
         if (!$success) {
-            throw new \RuntimeException("Failed to clear cookie '{$this->name}'");
+            throw new RuntimeException("Failed to clear cookie '{$this->name}'");
         }
 
         unset($_COOKIE[$this->name]);

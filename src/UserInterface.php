@@ -35,10 +35,10 @@ interface UserInterface
      * @param Context|null $context
      * @return int|string|int[]|string[]
      */
-    public function getAuthRole(?Context $context = null);
+    public function getAuthRole(?Context $context = null): array|int|string;
 
     /**
-     * User requires Multi Factor Authentication.
+     * User requires Multi-Factor Authentication.
      */
     public function requiresMfa(): bool;
 }

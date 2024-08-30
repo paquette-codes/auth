@@ -12,13 +12,14 @@ use Jasny\Auth\UserInterface as User;
 use Jasny\Auth\Authz\Levels;
 use Jasny\PHPUnit\ExpectWarningTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
 
 #[CoversClass(Levels::class)]
-#[CoversClass(StateTrait::class)]
+#[CoversTrait(StateTrait::class)]
 class LevelsTest extends TestCase
 {
     use ExpectWarningTrait;

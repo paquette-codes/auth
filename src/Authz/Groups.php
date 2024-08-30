@@ -69,11 +69,9 @@ class Groups implements Authz
      * Get a copy of the service with a modified property and recalculated
      * Returns $this if authz hasn't changed.
      *
-     * @param string $property
-     * @param string $value
-     * @return static
+     * Overwrites the `withProperty` method from the `Immutable\With` trait.
      */
-    protected function withProperty(string $property, $value): self
+    protected function withProperty(string $property, mixed $value): static
     {
         $clone = clone $this;
         $clone->{$property} = $value;
@@ -139,10 +137,8 @@ class Groups implements Authz
     /**
      * Get a copy, recalculating the authz level of the user.
      * Returns $this if authz hasn't changed.
-     *
-     * @return static
      */
-    public function recalc(): self
+    public function recalc(): static
     {
         $clone = clone $this;
         $clone->calcUserRoles();

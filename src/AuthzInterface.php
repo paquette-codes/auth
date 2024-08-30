@@ -38,8 +38,7 @@ interface AuthzInterface
     /**
      * Get a copy, recalculating the authz role of the user.
      */
-    public function recalc(): self;
-
+    public function recalc(): static;
 
     /**
      * Get current authenticated user.
@@ -59,7 +58,7 @@ interface AuthzInterface
 
     /**
      * Check if the current user is partially logged in.
-     * Typically this means MFA verification is required.
+     * Typically, this means MFA verification is required.
      */
     public function isPartiallyLoggedIn(): bool;
 

@@ -8,7 +8,9 @@ use DateInterval;
 use DateTimeImmutable;
 use Lcobucci\Clock\FrozenClock;
 use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Validation\Constraint;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Jasny\Auth\Session\Jwt;
 use Jasny\Auth\Session\Jwt\CookieValue;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -23,19 +25,13 @@ class JwtTest extends TestCase
 
     public function setUp(): void
     {
-        $this->jwtConfig = Configuration::forUnsecuredSigner();
+        $key = InMemory::base64Encoded('hiG8DlOKvtih6AxlZn5XKImZ06yu8I3mkOzaJrEuW8yAv8Jnkw330uMt8AEqQ5LB');
+        $this->jwtConfig = Configuration::forSymmetricSigner(new Sha256(), $key);
 
-        $constraint = class_exists(Constraint\LooseValidAt::class)
-            // V4
-            ? new Constraint\LooseValidAt(
-                new FrozenClock(new DateTimeImmutable('2020-01-02T00:00:00+00:00')),
-                new DateInterval('PT30S')
-            )
-            // V3
-            : new Constraint\ValidAt(
-                new FrozenClock(new DateTimeImmutable('2020-01-02T00:00:00+00:00')),
-                new DateInterval('PT30S')
-            );
+        $constraint = new Constraint\LooseValidAt(
+            new FrozenClock(new DateTimeImmutable('2020-01-02T00:00:00+00:00')),
+            new DateInterval('PT30S')
+        );
         $this->jwtConfig->setValidationConstraints($constraint);
 
         $this->jwt = (new Jwt($this->jwtConfig))
@@ -54,9 +50,9 @@ class JwtTest extends TestCase
             ->getToken($this->jwtConfig->signer(), $this->jwtConfig->signingKey());
 
         $cookie = new CookieValue($token->toString());
-        $this->jwt = $this->jwt->withCookie($cookie);
+        $jwt = $this->jwt->withCookie($cookie);
 
-        $info = $this->jwt->getInfo();
+        $info = $jwt->getInfo();
 
         $expected = [
             'user' => 'abc',
@@ -78,9 +74,9 @@ class JwtTest extends TestCase
 
         $cookie = new CookieValue($token->toString());
 
-        $this->jwt = $this->jwt->withCookie($cookie);
+        $jwt = $this->jwt->withCookie($cookie);
 
-        $info = $this->jwt->getInfo();
+        $info = $jwt->getInfo();
 
         $expected = [
             'user' => 'abc',
@@ -103,9 +99,9 @@ class JwtTest extends TestCase
             ->getToken($this->jwtConfig->signer(), $this->jwtConfig->signingKey());
 
         $cookie = new CookieValue($token->toString());
-        $this->jwt = $this->jwt->withCookie($cookie);
+        $jwt = $this->jwt->withCookie($cookie);
 
-        $info = $this->jwt->getInfo();
+        $info = $jwt->getInfo();
 
         $this->assertEquals(
             ['user' => null, 'context' => null, 'checksum' => null, 'timestamp' => null],

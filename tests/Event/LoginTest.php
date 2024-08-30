@@ -10,11 +10,12 @@ use Jasny\Auth\Event\CancellableTrait;
 use Jasny\Auth\Event\Login;
 use Jasny\Auth\UserInterface as User;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Login::class)]
 #[CoversClass(AbstractEvent::class)]
-#[CoversClass(CancellableTrait::class)]
+#[CoversTrait(CancellableTrait::class)]
 class LoginTest extends TestCase
 {
     public function testGetters()

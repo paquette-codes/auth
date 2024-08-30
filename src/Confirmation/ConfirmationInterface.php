@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Confirmation;
 
+use DateTimeInterface;
 use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Auth\UserInterface as User;
 use Psr\Log\LoggerInterface as Logger;
@@ -40,7 +41,7 @@ interface ConfirmationInterface
     /**
      * Generate a confirmation token.
      */
-    public function getToken(User $user, \DateTimeInterface $expire): string;
+    public function getToken(User $user, DateTimeInterface $expire): string;
 
     /**
      * Get user by confirmation token.

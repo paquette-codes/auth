@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Session;
 
+use DateTimeInterface;
+use RuntimeException;
+use const PHP_SESSION_ACTIVE;
+
 /**
  * Use PHP sessions to store auth session info.
  */
@@ -26,12 +30,12 @@ class PhpSession implements SessionInterface
     /**
      * Assert that there is an active session.
      *
-     * @throws \RuntimeException if there is no active session
+     * @throws RuntimeException if there is no active session
      */
     protected function assertSessionStarted(): void
     {
-        if (session_status() !== \PHP_SESSION_ACTIVE) {
-            throw new \RuntimeException("Unable to use session for auth info: Session not started");
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            throw new RuntimeException("Unable to use session for auth info: Session not started");
         }
     }
 
@@ -48,7 +52,7 @@ class PhpSession implements SessionInterface
     /**
      * @inheritDoc
      */
-    public function persist($userId, $contextId, ?string $checksum, ?\DateTimeInterface $timestamp): void
+    public function persist(mixed $userId, mixed $contextId, ?string $checksum, ?DateTimeInterface $timestamp): void
     {
         $this->assertSessionStarted();
 
@@ -56,7 +60,7 @@ class PhpSession implements SessionInterface
             'user' => $userId,
             'context' => $contextId,
             'checksum' => $checksum,
-            'timestamp' => isset($timestamp) ? $timestamp->getTimestamp() : null,
+            'timestamp' => $timestamp?->getTimestamp(),
         ];
     }
 

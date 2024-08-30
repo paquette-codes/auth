@@ -61,7 +61,7 @@ final class PartiallyLoggedIn implements UserInterface
     /**
      * @inheritDoc
      */
-    public function getAuthRole(?ContextInterface $context = null)
+    public function getAuthRole(?ContextInterface $context = null): int|array|string
     {
         return $this->user->getAuthRole($context);
     }

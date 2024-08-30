@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Confirmation;
 
+use DateTimeInterface;
 use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Auth\UserInterface as User;
 use LogicException;
@@ -43,7 +44,7 @@ class NoConfirmation implements ConfirmationInterface
      *
      * @throws LogicException
      */
-    public function getToken(User $user, \DateTimeInterface $expire): string
+    public function getToken(User $user, DateTimeInterface $expire): string
     {
         throw new LogicException("Confirmation tokens are not supported");
     }

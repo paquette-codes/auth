@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Jasny\Auth;
 
+use Closure;
 use Improved as i;
 use Improved\IteratorPipeline\Pipeline;
 use Jasny\Auth\AuthzInterface as Authz;
 use Jasny\Auth\Session\SessionInterface;
+use LogicException;
 use Psr\Http\Message\ServerRequestInterface as ServerRequest;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ResponseFactoryInterface as ResponseFactory;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Psr\Http\Server\MiddlewareInterface;
+use UnexpectedValueException;
 
 /**
  * Middleware for access control.
@@ -23,15 +26,15 @@ class AuthMiddleware implements MiddlewareInterface
     protected ?ResponseFactory $responseFactory = null;
 
     /**
-     * @var null|\Closure(ServerRequest $request):SessionInterface
+     * @var null|Closure(ServerRequest $request):SessionInterface
      */
-    protected ?\Closure $getSession;
+    protected ?Closure $getSession;
 
     /**
-     * @var \Closure(ServerRequest $request):mixed
+     * @var Closure(ServerRequest $request):mixed
      * Function to get the required role from the request.
      */
-    protected \Closure $getRequiredRole;
+    protected Closure $getRequiredRole;
 
     /**
      * Class constructor
@@ -44,7 +47,7 @@ class AuthMiddleware implements MiddlewareInterface
     {
         $this->auth = $auth;
         $this->responseFactory = $responseFactory;
-        $this->getRequiredRole = \Closure::fromCallable($getRequiredRole);
+        $this->getRequiredRole = $getRequiredRole(...);
     }
 
     /**
@@ -56,7 +59,7 @@ class AuthMiddleware implements MiddlewareInterface
     public function withSession(callable $getSession): self
     {
         $copy = clone $this;
-        $copy->getSession = \Closure::fromCallable($getSession);
+        $copy->getSession = $getSession(...);
 
         return $copy;
     }
@@ -104,7 +107,7 @@ class AuthMiddleware implements MiddlewareInterface
     {
         if (!$this->auth instanceof Auth) {
             if (isset($this->getSession)) {
-                throw new \LogicException("Session can't be used for immutable authz service");
+                throw new LogicException("Session can't be used for immutable authz service");
             }
             return;
         }
@@ -125,7 +128,7 @@ class AuthMiddleware implements MiddlewareInterface
         return i\type_check(
             ($this->getSession)($request),
             SessionInterface::class,
-            new \UnexpectedValueException()
+            new UnexpectedValueException()
         );
     }
 
@@ -181,6 +184,6 @@ class AuthMiddleware implements MiddlewareInterface
             return $originalResponse->withStatus($status)->withBody($body);
         }
 
-        throw new \LogicException('Response factory not set');
+        throw new LogicException('Response factory not set');
     }
 }

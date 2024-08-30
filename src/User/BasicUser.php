@@ -4,21 +4,19 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\User;
 
+use AllowDynamicProperties;
 use Jasny\Auth\ContextInterface as Context;
 use Jasny\Auth\UserInterface;
 
 /**
- * A simple user class which can be used be used instead of creating a custom user class.
+ * A simple user class which can be used instead of creating a custom user class.
  */
+#[AllowDynamicProperties]
 final class BasicUser implements UserInterface
 {
-    /** @var string|int */
-    public $id;
-
+    public string|int $id;
     protected string $hashedPassword = '';
-
-    /** @var string|int */
-    public $role;
+    public string|int $role;
 
     /**
      * @inheritDoc
@@ -47,7 +45,7 @@ final class BasicUser implements UserInterface
     /**
      * @inheritDoc
      */
-    public function getAuthRole(?Context $context = null)
+    public function getAuthRole(?Context $context = null): string|int
     {
         return $this->role;
     }
@@ -63,8 +61,8 @@ final class BasicUser implements UserInterface
     /**
      * Factory method; create object from data loaded from DB.
      *
-     * @phpstan-param array<string,mixed> $data
-     * @phpstan-return self
+     * @param array<string,mixed> $data
+     * @return self
      */
     public static function fromData(array $data): self
     {

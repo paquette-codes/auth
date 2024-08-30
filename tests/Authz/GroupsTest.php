@@ -7,11 +7,11 @@ use Jasny\Auth\UserInterface as User;
 use Jasny\Auth\Authz\Groups;
 use Jasny\PHPUnit\ExpectWarningTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 
-#[CoversClass(StateTrait::class)]
+#[CoversTrait(StateTrait::class)]
 #[CoversClass(Groups::class)]
 class GroupsTest extends TestCase
 {
@@ -139,7 +139,7 @@ class GroupsTest extends TestCase
     }
 
 
-    public function crossReferenceProvider()
+    public static function crossReferenceProvider(): array
     {
         return [
             'client' => ['client'],
@@ -148,9 +148,7 @@ class GroupsTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider crossReferenceProvider
-     */
+    #[DataProvider('crossReferenceProvider')]
     public function testCrossReference(string $role)
     {
         $this->authz = new Groups([

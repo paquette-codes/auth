@@ -31,8 +31,11 @@ trait StateTrait
 
     /**
      * Get a copy of the service for the given user.
+     *
+     * @param User|null $user
+     * @return static&Authz
      */
-    public function forUser(?User $user): static
+    public function forUser(?User $user): Authz
     {
         return $this->withProperty('user', $user);
     }
@@ -40,16 +43,21 @@ trait StateTrait
     /**
      * Get a copy of the service for the given context.
      * Returns $this if authz hasn't changed.
+     *
+     * @param Context|null $context
+     * @return static&Authz
      */
-    public function inContextOf(?Context $context): static
+    public function inContextOf(?Context $context): Authz
     {
         return $this->withProperty('context', $context);
     }
 
     /**
      * Alias of `inContextOf(null)`.
+     *
+     * @return static&Authz
      */
-    final public function outOfContext(): static
+    final public function outOfContext(): Authz
     {
         return $this->inContextOf(null);
     }

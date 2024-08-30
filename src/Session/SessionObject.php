@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Jasny\Auth\Session;
 
+use ArrayAccess;
+use DateTimeInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
@@ -15,16 +17,16 @@ class SessionObject implements SessionInterface
 
     protected string $key;
 
-    /** @var \ArrayAccess<string,mixed> */
-    protected \ArrayAccess $session;
+    /** @var ArrayAccess<string,mixed> */
+    protected ArrayAccess $session;
 
     /**
      * Service constructor.
      *
-     * @param \ArrayAccess<string,mixed> $session
+     * @param ArrayAccess<string,mixed> $session
      * @param string                     $key
      */
-    public function __construct(\ArrayAccess $session, string $key = 'auth')
+    public function __construct(ArrayAccess $session, string $key = 'auth')
     {
         $this->session = $session;
         $this->key = $key;
@@ -33,13 +35,14 @@ class SessionObject implements SessionInterface
     /**
      * Use the `session` attribute if it's an object that implements ArrayAccess.
      *
+     * @param ServerRequestInterface $request
      * @return self
      */
     public function forRequest(ServerRequestInterface $request): self
     {
         $session = $request->getAttribute('session');
 
-        if (!$session instanceof \ArrayAccess) {
+        if (!$session instanceof ArrayAccess) {
             return $this;
         }
 
@@ -61,13 +64,13 @@ class SessionObject implements SessionInterface
     /**
      * @inheritDoc
      */
-    public function persist($userId, $contextId, ?string $checksum, ?\DateTimeInterface $timestamp): void
+    public function persist(mixed $userId, mixed $contextId, ?string $checksum, ?DateTimeInterface $timestamp): void
     {
         $this->session[$this->key] = [
             'user' => $userId,
             'context' => $contextId,
             'checksum' => $checksum,
-            'timestamp' => isset($timestamp) ? $timestamp->getTimestamp() : null,
+            'timestamp' => $timestamp?->getTimestamp(),
         ];
     }
 

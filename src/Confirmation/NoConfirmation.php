@@ -6,6 +6,7 @@ namespace Jasny\Auth\Confirmation;
 
 use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Auth\UserInterface as User;
+use LogicException;
 use Psr\Log\LoggerInterface as Logger;
 
 /**
@@ -16,7 +17,7 @@ class NoConfirmation implements ConfirmationInterface
     /**
      * @inheritDoc
      */
-    public function withStorage(Storage $storage)
+    public function withStorage(Storage $storage): static
     {
         return $this;
     }
@@ -24,7 +25,7 @@ class NoConfirmation implements ConfirmationInterface
     /**
      * @inheritDoc
      */
-    public function withLogger(Logger $logger)
+    public function withLogger(Logger $logger): static
     {
         return $this;
     }
@@ -32,7 +33,7 @@ class NoConfirmation implements ConfirmationInterface
     /**
      * @inheritDoc
      */
-    public function withSubject(string $subject)
+    public function withSubject(string $subject): static
     {
         return $this;
     }
@@ -40,11 +41,11 @@ class NoConfirmation implements ConfirmationInterface
     /**
      * Generate a confirmation token.
      *
-     * @throws \LogicException
+     * @throws LogicException
      */
     public function getToken(User $user, \DateTimeInterface $expire): string
     {
-        throw new \LogicException("Confirmation tokens are not supported");
+        throw new LogicException("Confirmation tokens are not supported");
     }
 
     /**
@@ -52,10 +53,10 @@ class NoConfirmation implements ConfirmationInterface
      *
      * @param string $token Confirmation token
      * @return User
-     * @throws \LogicException
+     * @throws LogicException
      */
     public function from(string $token): User
     {
-        throw new \LogicException("Confirmation tokens are not supported");
+        throw new LogicException("Confirmation tokens are not supported");
     }
 }

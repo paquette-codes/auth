@@ -7,13 +7,12 @@ namespace Jasny\Auth\Tests\Session\Jwt;
 use Jasny\Auth\Session\Jwt\CookieMiddleware;
 use Jasny\Auth\Session\Jwt\CookieValue;
 use Jasny\PHPUnit\CallbackMockTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as ServerRequest;
 
-/**
- * @covers \Jasny\Auth\Session\Jwt\CookieMiddleware
- */
+#[CoversClass(CookieMiddleware::class)]
 class CookieMiddlewareDoublePassTest extends TestCase
 {
     use CallbackMockTrait;
@@ -25,14 +24,14 @@ class CookieMiddlewareDoublePassTest extends TestCase
         $this->middleware = new CookieMiddleware('jwt', ['domain' => 'example.com']);
     }
 
-    public function testNoJwt()
+    public function testNoJwt(): void
     {
         $cookieRequest = $this->createMock(ServerRequest::class);
 
         $request = $this->createMock(ServerRequest::class);
         $request->expects($this->once())->method('getCookieParams')->willReturn([]);
         $request->expects($this->once())->method('withAttribute')
-            ->with('jwt_cookie', $this->callback(function($cookie) {
+            ->with('jwt_cookie', $this->callback(function ($cookie) {
                 $this->assertInstanceOf(CookieValue::class, $cookie);
                 $this->assertNull($cookie->get());
                 return true;
@@ -60,7 +59,7 @@ class CookieMiddlewareDoublePassTest extends TestCase
         $this->assertSame($response, $result);
     }
 
-    public function testWithJwtCookie()
+    public function testWithJwtCookie(): void
     {
         $cookieRequest = $this->createMock(ServerRequest::class);
 
@@ -68,7 +67,7 @@ class CookieMiddlewareDoublePassTest extends TestCase
         $request->expects($this->once())->method('getCookieParams')
             ->willReturn(['jwt' => '..TOKEN..']);
         $request->expects($this->once())->method('withAttribute')
-            ->with('jwt_cookie', $this->callback(function($cookie) {
+            ->with('jwt_cookie', $this->callback(function ($cookie) {
                 $this->assertInstanceOf(CookieValue::class, $cookie);
                 $this->assertEquals('..TOKEN..', $cookie->get());
                 return true;
@@ -96,7 +95,7 @@ class CookieMiddlewareDoublePassTest extends TestCase
         $this->assertSame($response, $result);
     }
 
-    public function testSetJwtCookie()
+    public function testSetJwtCookie(): void
     {
         /** @var CookieValue|null $cookie */
         $cookie = null;
@@ -106,7 +105,7 @@ class CookieMiddlewareDoublePassTest extends TestCase
         $request = $this->createMock(ServerRequest::class);
         $request->expects($this->once())->method('getCookieParams')->willReturn([]);
         $request->expects($this->once())->method('withAttribute')
-            ->with('jwt_cookie', $this->callback(function($arg) use (&$cookie) {
+            ->with('jwt_cookie', $this->callback(function ($arg) use (&$cookie) {
                 $cookie = $arg;
                 $this->assertInstanceOf(CookieValue::class, $cookie);
                 return true;

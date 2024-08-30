@@ -11,12 +11,11 @@ use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Validation\Constraint;
 use Jasny\Auth\Session\Jwt;
 use Jasny\Auth\Session\Jwt\CookieValue;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Jasny\Auth\Session\Jwt
- * @covers \Jasny\Auth\Session\Jwt\CookieValue
- */
+#[CoversClass(CookieValue::class)]
+#[CoversClass(Jwt::class)]
 class JwtTest extends TestCase
 {
     protected Configuration $jwtConfig;

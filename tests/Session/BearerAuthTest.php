@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Jasny\Auth\Tests\Session;
 
 use Jasny\Auth\Session\BearerAuth;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 
-/**
- * @covers \Jasny\Auth\Session\BearerAuth
- */
+#[CoversClass(BearerAuth::class)]
 class BearerAuthTest extends TestCase
 {
     protected function createService(string $header = ''): BearerAuth

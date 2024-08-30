@@ -2,24 +2,22 @@
 
 namespace Jasny\Auth\Tests\Authz;
 
+use Jasny\Auth\Authz\StateTrait;
 use Jasny\Auth\UserInterface as User;
 use Jasny\Auth\Authz\Groups;
 use Jasny\PHPUnit\ExpectWarningTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
-/**
- * @covers \Jasny\Auth\Authz\Groups
- * @covers \Jasny\Auth\Authz\StateTrait
- */
+#[CoversClass(StateTrait::class)]
+#[CoversClass(Groups::class)]
 class GroupsTest extends TestCase
 {
     use ExpectWarningTrait;
     
-    /**
-     * @var Groups&MockObject
-     */
-    protected $authz;
+    protected Groups $authz;
     
     public function setUp(): void
     {
@@ -32,7 +30,7 @@ class GroupsTest extends TestCase
         ]);
     }
     
-    public function testAvailableGetRoles()
+    public function testAvailableGetRoles(): void
     {
         $this->assertEquals(
             ['user', 'client', 'mod', 'dev', 'admin'],
@@ -40,7 +38,7 @@ class GroupsTest extends TestCase
         );
     }
 
-    public function roleProvider()
+    public static function roleProvider(): array
     {
         return [
             'user' => [
@@ -66,18 +64,13 @@ class GroupsTest extends TestCase
         ];
     }
 
-    public function testIsWithoutUser()
+    public function testIsWithoutUser(): void
     {
         $this->assertFalse($this->authz->is('user'));
     }
 
-    /**
-     * @dataProvider roleProvider
-     * 
-     * @param string|array $role
-     * @param array        $expect
-     */
-    public function testIsWithUser($role, array $expect)
+    #[DataProvider('roleProvider')]
+    public function testIsWithUser(string | array $role, array $expect)
     {
         $user = $this->createMock(User::class);
         $user->expects($this->any())->method('getAuthRole')->willReturn($role);

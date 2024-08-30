@@ -31,11 +31,8 @@ trait StateTrait
 
     /**
      * Get a copy of the service for the given user.
-     *
-     * @param User|null $user
-     * @return static&Authz
      */
-    public function forUser(?User $user): Authz
+    public function forUser(?User $user): static
     {
         return $this->withProperty('user', $user);
     }
@@ -43,21 +40,16 @@ trait StateTrait
     /**
      * Get a copy of the service for the given context.
      * Returns $this if authz hasn't changed.
-     *
-     * @param Context|null $context
-     * @return static&Authz
      */
-    public function inContextOf(?Context $context): Authz
+    public function inContextOf(?Context $context): static
     {
         return $this->withProperty('context', $context);
     }
 
     /**
      * Alias of `inContextOf(null)`.
-     *
-     * @return static&Authz
      */
-    final public function outOfContext(): Authz
+    final public function outOfContext(): static
     {
         return $this->inContextOf(null);
     }
@@ -94,7 +86,7 @@ trait StateTrait
 
     /**
      * Check if the current user is partially logged in.
-     * Typically this means MFA verification is required.
+     * Typically, this means MFA verification is required.
      */
     public function isPartiallyLoggedIn(): bool
     {

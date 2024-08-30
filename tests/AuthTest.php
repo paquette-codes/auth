@@ -13,35 +13,33 @@ use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Auth\User\PartiallyLoggedIn;
 use Jasny\Auth\UserInterface as User;
 use Jasny\PHPUnit\CallbackMockTrait;
-use Jasny\PHPUnit\PrivateAccessTrait;
+use Jasny\PHPUnit\ConsecutiveTrait;
+use Jasny\PHPUnit\InContextOfTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\EventDispatcher\EventDispatcherInterface as EventDispatcher;
 use Psr\Log\LoggerInterface;
 
-/**
- * @covers \Jasny\Auth\Auth
- */
+#[CoversClass(Auth::class)]
 class AuthTest extends TestCase
 {
     use CallbackMockTrait;
-    use PrivateAccessTrait;
+    use InContextOfTrait;
+    use ConsecutiveTrait;
 
-    protected Auth $service;
+    public Auth $service;
 
-    /** @var Authz&MockObject */
-    protected $authz;
-    /** @var Session&MockObject */
-    protected $session;
-    /** @var Storage&MockObject */
-    protected $storage;
-    /** @var Confirmation&MockObject */
-    protected $confirmation;
+    public Authz & MockObject $authz;
+    public Session & MockObject $session;
+    public Storage & MockObject $storage;
+    public Confirmation & MockObject $confirmation;
 
-    /** @var EventDispatcher&MockObject */
-    protected $dispatcher;
-    /** @var LoggerInterface&MockObject */
-    protected $logger;
+    public EventDispatcher & MockObject $dispatcher;
+    public LoggerInterface & MockObject $logger;
 
     public function setUp(): void
     {
@@ -57,16 +55,15 @@ class AuthTest extends TestCase
             ->withEventDispatcher($this->dispatcher)
             ->withLogger($this->logger);
 
-        if (!in_array('initialize', $this->getGroups(), true)) {
-            $this->setPrivateProperty($this->service, 'session', $this->session);
+        if (!in_array('initialize', $this->groups(), true)) {
+            $this->inContextOf($this->service, function ($service) {
+                $service->session = $this->session;
+            });
         }
     }
 
 
-    /**
-     * @return Authz&MockObject
-     */
-    protected function createNewAuthzMock(?User $user, ?Context $context)
+    protected function createNewAuthzMock(?User $user, ?Context $context): Authz & MockObject
     {
         $newAuthz = $this->createMock(Authz::class);
         $loggedIn = $user !== null;
@@ -85,10 +82,7 @@ class AuthTest extends TestCase
         return $newAuthz;
     }
 
-    /**
-     * @return Authz&MockObject
-     */
-    protected function expectInitAuthz(?User $user, ?Context $context)
+    protected function expectInitAuthz(?User $user, ?Context $context): Authz & MockObject
     {
         $newAuthz = $this->createNewAuthzMock($user, $context);
 
@@ -103,10 +97,7 @@ class AuthTest extends TestCase
     }
 
 
-    /**
-     * @return Authz&MockObject
-     */
-    protected function expectSetAuthzUser(?User $user, ?Context $context = null)
+    protected function expectSetAuthzUser(?User $user, ?Context $context = null): Authz & MockObject
     {
         $newAuthz = $this->createNewAuthzMock($user, $context);
 
@@ -117,10 +108,7 @@ class AuthTest extends TestCase
         return $newAuthz;
     }
 
-    /**
-     * @return Authz&MockObject
-     */
-    protected function expectSetAuthzContext(?User $user, ?Context $context)
+    protected function expectSetAuthzContext(?User $user, ?Context $context): Authz & MockObject
     {
         $newAuthz = $this->createNewAuthzMock($user, $context);
 
@@ -131,10 +119,7 @@ class AuthTest extends TestCase
         return $newAuthz;
     }
 
-    /**
-     * @return Authz&MockObject
-     */
-    protected function expectAuthzWithPartialLogin(User $user)
+    protected function expectAuthzWithPartialLogin(User $user): Authz & MockObject
     {
         $newAuthz = $this->createMock(Authz::class);
         $newAuthz->expects($this->any())->method('isLoggedIn')->willReturn(false);
@@ -155,7 +140,7 @@ class AuthTest extends TestCase
         return $newAuthz;
     }
 
-    public function testWithLogger()
+    public function testWithLogger(): void
     {
         $this->assertSame($this->logger, $this->service->getLogger());
 
@@ -169,10 +154,8 @@ class AuthTest extends TestCase
         $this->assertSame($this->logger, $this->service->getLogger());
     }
 
-    /**
-     * @group initialize
-     */
-    public function testInitializeWithoutSession()
+    #[Group('initialize')]
+    public function testInitializeWithoutSession(): Auth
     {
         //<editor-fold desc="[prepare mocks]">
         $this->session->expects($this->once())
@@ -194,20 +177,16 @@ class AuthTest extends TestCase
         return $this->service;
     }
 
-    /**
-     * @depends testInitializeWithoutSession
-     * @group initialize
-     */
-    public function testInitializeTwice(Auth $service)
+    #[Group('initialize')]
+    #[Depends('testInitializeWithoutSession')]
+    public function testInitializeTwice(Auth $service): void
     {
         $this->expectException(\LogicException::class);
         $service->initialize($this->session);
     }
 
-    /**
-     * @group initialize
-     */
-    public function testInitializeWithUser()
+    #[Group('initialize')]
+    public function testInitializeWithUser(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
 
@@ -232,10 +211,8 @@ class AuthTest extends TestCase
         $this->assertEquals($timestamp, $this->service->time());
     }
 
-    /**
-     * @group initialize
-     */
-    public function testInitializeWithUserAndContext()
+    #[Group('initialize')]
+    public function testInitializeWithUserAndContext(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
         $context = $this->createConfiguredMock(Context::class, ['getAuthId' => 'foo']);
@@ -263,10 +240,8 @@ class AuthTest extends TestCase
         $this->assertEquals($timestamp, $this->service->time());
     }
 
-    /**
-     * @group initialize
-     */
-    public function testInitializeWithUserAndContextObjects()
+    #[Group('initialize')]
+    public function testInitializeWithUserAndContextObjects(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
         $context = $this->createConfiguredMock(Context::class, ['getAuthId' => 'foo']);
@@ -287,10 +262,8 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    /**
-     * @group initialize
-     */
-    public function testInitializeWithInvalidAuthChecksum()
+    #[Group('initialize')]
+    public function testInitializeWithInvalidAuthChecksum(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'xyz']);
 
@@ -315,10 +288,8 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    /**
-     * @group initialize
-     */
-    public function testInitializeWithPartialLogin()
+    #[Group('initialize')]
+    public function testInitializeWithPartialLogin(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
 
@@ -344,7 +315,7 @@ class AuthTest extends TestCase
     }
 
 
-    public function initalizedMethodProvider()
+    public static function initializedMethodProvider(): array
     {
         return [
             'is(...)' => ['is', 'foo'],
@@ -353,20 +324,16 @@ class AuthTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider initalizedMethodProvider
-     * @group initialize
-     */
+    #[Group('initialize')]
+    #[DataProvider('initializedMethodProvider')]
     public function testAssertInitialized(string $method, ...$args)
     {
         $this->expectException(\LogicException::class);
         $this->service->{$method}(...$args);
     }
 
-    /**
-     * @group initialize
-     */
-    public function testForMultipleRequests()
+    #[Group('initialize')]
+    public function testForMultipleRequests(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
         $apikey = $this->createConfiguredMock(User::class, ['getAuthId' => 'key:abc', 'getAuthChecksum' => '']);
@@ -383,7 +350,7 @@ class AuthTest extends TestCase
             ->willReturn(['user' => 'key:abc', 'context' => null, 'checksum' => '', 'timestamp' => null]);
 
         $this->storage->expects($this->exactly(2))->method('fetchUserById')
-            ->withConsecutive(['42'], ['key:abc'])
+            ->with(...$this->consecutive(['42'], ['key:abc']))
             ->willReturnOnConsecutiveCalls($user, $apikey);
 
         $this->storage->expects($this->never())->method('fetchContext');
@@ -392,7 +359,7 @@ class AuthTest extends TestCase
         $authzTwo = $this->createMock(Authz::class);
 
         $this->authz->expects($this->exactly(2))->method('forUser')
-            ->withConsecutive([$this->identicalTo($user)], [$this->identicalTo($apikey)])
+            ->with(...$this->consecutive([$this->identicalTo($user)], [$this->identicalTo($apikey)]))
             ->willReturnSelf();
         $this->authz->expects($this->exactly(2))->method('inContextOf')
             ->with(null)
@@ -412,8 +379,7 @@ class AuthTest extends TestCase
         $this->assertSame($authzTwo, $service->authz());
     }
 
-
-    public function testGetAvailableRoles()
+    public function testGetAvailableRoles(): void
     {
         $this->authz->expects($this->once())->method('getAvailableRoles')
             ->willReturn(['user', 'manager', 'admin']);
@@ -421,7 +387,7 @@ class AuthTest extends TestCase
         $this->assertEquals(['user', 'manager', 'admin'], $this->service->getAvailableRoles());
     }
 
-    public function testIsLoggedIn()
+    public function testIsLoggedIn(): void
     {
         $this->authz->expects($this->exactly(2))->method('isLoggedIn')
             ->willReturnOnConsecutiveCalls(true, false);
@@ -430,7 +396,7 @@ class AuthTest extends TestCase
         $this->assertFalse($this->service->isLoggedIn());
     }
 
-    public function testIsPartiallyLoggedIn()
+    public function testIsPartiallyLoggedIn(): void
     {
         $this->authz->expects($this->exactly(2))->method('isPartiallyLoggedIn')
             ->willReturnOnConsecutiveCalls(true, false);
@@ -439,7 +405,7 @@ class AuthTest extends TestCase
         $this->assertFalse($this->service->isPartiallyLoggedIn());
     }
 
-    public function testIsLoggedOut()
+    public function testIsLoggedOut(): void
     {
         $this->authz->expects($this->exactly(2))->method('isLoggedOut')
             ->willReturnOnConsecutiveCalls(true, false);
@@ -448,17 +414,17 @@ class AuthTest extends TestCase
         $this->assertFalse($this->service->isLoggedOut());
     }
 
-    public function testIs()
+    public function testIs(): void
     {
         $this->authz->expects($this->exactly(2))->method('is')
-            ->withConsecutive(['foo'], ['bar'])
+            ->with(...$this->consecutive(['foo'], ['bar']))
             ->willReturn(true, false);
 
         $this->assertTrue($this->service->is('foo'));
         $this->assertFalse($this->service->is('bar'));
     }
 
-    public function testUser()
+    public function testUser(): void
     {
         $user = $this->createMock(User::class);
         $this->authz->expects($this->once())->method('user')->willReturn($user);
@@ -466,7 +432,7 @@ class AuthTest extends TestCase
         $this->assertSame($user, $this->service->user());
     }
 
-    public function testContext()
+    public function testContext(): void
     {
         $context = $this->createMock(Context::class);
         $this->authz->expects($this->once())->method('context')->willReturn($context);
@@ -474,7 +440,7 @@ class AuthTest extends TestCase
         $this->assertSame($context, $this->service->context());
     }
 
-    public function testLoginAs()
+    public function testLoginAs(): void
     {
         //<editor-fold desc="[prepare mocks]">
         $user = $this->createConfiguredMock(
@@ -511,7 +477,7 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    public function testLoginAsWithPartialLogin()
+    public function testLoginAsWithPartialLogin(): void
     {
         //<editor-fold desc="[prepare mocks]">
         $user = $this->createConfiguredMock(
@@ -547,7 +513,7 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    public function testCancelLogin()
+    public function testCancelLogin(): void
     {
         $user = $this->createConfiguredMock(
             User::class,
@@ -576,7 +542,7 @@ class AuthTest extends TestCase
         $this->service->loginAs($user);
     }
 
-    public function testLoginAsTwice()
+    public function testLoginAsTwice(): void
     {
         $user = $this->createMock(User::class);
 
@@ -590,7 +556,7 @@ class AuthTest extends TestCase
         $this->service->loginAs($user);
     }
 
-    public function testLoginAsWithDefaultContext()
+    public function testLoginAsWithDefaultContext(): void
     {
         //<editor-fold desc="[prepare mocks]">
         $user = $this->createConfiguredMock(
@@ -629,7 +595,7 @@ class AuthTest extends TestCase
     }
 
 
-    public function testLogin()
+    public function testLogin(): void
     {
         $user = $this->createMock(User::class);
         $user->expects($this->once())->method('verifyPassword')
@@ -674,7 +640,7 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    public function testLoginWithIncorrectUsername()
+    public function testLoginWithIncorrectUsername(): void
     {
         $this->storage->expects($this->once())->method('fetchUserByUsername')
             ->with('john')
@@ -700,7 +666,7 @@ class AuthTest extends TestCase
         $this->service->login('john', 'pwd');
     }
 
-    public function testLoginWithInvalidPassword()
+    public function testLoginWithInvalidPassword(): void
     {
         $user = $this->createMock(User::class);
         $user->expects($this->once())->method('verifyPassword')
@@ -735,7 +701,7 @@ class AuthTest extends TestCase
         $this->service->login('john', 'pwd');
     }
 
-    public function testLoginTwice()
+    public function testLoginTwice(): void
     {
         //<editor-fold desc="[prepare mocks]">
         $user = $this->createMock(User::class);
@@ -748,7 +714,7 @@ class AuthTest extends TestCase
         $this->service->login('john', 'pwd');
     }
 
-    public function testLogout()
+    public function testLogout(): void
     {
         //<editor-fold desc="[prepare mocks]">
         $user = $this->createMock(User::class);
@@ -767,7 +733,9 @@ class AuthTest extends TestCase
         $this->logger->expects($this->once())->method('debug')
             ->with("Logout", ['user' => '42']);
 
-        $this->setPrivateProperty($this->service, 'timestamp', new \DateTimeImmutable('2020-01-01T00:00:00+00:00'));
+        $this->inContextOf($this->service, function () {
+            $this->service->timestamp = new \DateTimeImmutable('2020-01-01T00:00:00+00:00');
+        });
 
         $this->authz->expects($this->any())->method('isLoggedIn')->willReturn(true);
         $this->authz->expects($this->any())->method('isPartiallyLoggedIn')->willReturn(false);
@@ -783,7 +751,7 @@ class AuthTest extends TestCase
         $this->assertNull($this->service->time());
     }
 
-    public function testLogoutTwice()
+    public function testLogoutTwice(): void
     {
         $this->authz->expects($this->any())->method('isLoggedIn')->willReturn(false);
         $this->authz->expects($this->any())->method('isPartiallyLoggedIn')->willReturn(false);
@@ -795,7 +763,7 @@ class AuthTest extends TestCase
         $this->service->logout();
     }
 
-    public function testLogoutPartialLogin()
+    public function testLogoutPartialLogin(): void
     {
         //<editor-fold desc="[prepare mocks]">
         $user = $this->createMock(User::class);
@@ -806,7 +774,9 @@ class AuthTest extends TestCase
         $this->logger->expects($this->once())->method('debug')
             ->with("Abort partial login", ['user' => '42']);
 
-        $this->setPrivateProperty($this->service, 'timestamp', new \DateTimeImmutable('2020-01-01T00:00:00+00:00'));
+        $this->inContextOf($this->service, function ($service) {
+            $service->timestamp = new \DateTimeImmutable('2020-01-01T00:00:00+00:00');
+        });
 
         $this->authz->expects($this->any())->method('isLoggedIn')->willReturn(false);
         $this->authz->expects($this->any())->method('isPartiallyLoggedIn')->willReturn(true);
@@ -822,7 +792,7 @@ class AuthTest extends TestCase
         $this->assertNull($this->service->time());
     }
     
-    public function testPartialLogin()
+    public function testPartialLogin(): void
     {
         $user = $this->createMock(User::class);
         $user->expects($this->once())->method('verifyPassword')
@@ -865,7 +835,7 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    public function testPartialLoginAs()
+    public function testPartialLoginAs(): void
     {
         $user = $this->createMock(User::class);
         $user->expects($this->any())->method('requiresMFA')->willReturn(true);
@@ -901,7 +871,7 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    public function testCancelPartialLogin()
+    public function testCancelPartialLogin(): void
     {
         $user = $this->createMock(User::class);
         $user->expects($this->once())->method('requiresMFA')->willReturn(true);
@@ -932,7 +902,7 @@ class AuthTest extends TestCase
         $this->service->loginAs($user);
     }
 
-    public function testMfaWhenPartiallyLoggedIn()
+    public function testMfaWhenPartiallyLoggedIn(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
         $partial = new PartiallyLoggedIn($user);
@@ -943,7 +913,7 @@ class AuthTest extends TestCase
         $this->authz->expects($this->any())->method('isLoggedOut')->willReturn(false);
         $this->authz->expects($this->atLeastOnce())->method('user')->willReturn($partial);
 
-        $service = $this->service->withMFA(function($mfaUser, $mfaCode) use ($user): bool  {
+        $service = $this->service->withMFA(function ($mfaUser, $mfaCode) use ($user): bool {
             $this->assertSame($user, $mfaUser);
             $this->assertSame("123890", $mfaCode);
 
@@ -982,7 +952,7 @@ class AuthTest extends TestCase
         $this->assertEqualsWithDelta(time(), $service->time()->getTimestamp(), 5);
     }
 
-    public function testMfaWhenLoggedIn()
+    public function testMfaWhenLoggedIn(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
 
@@ -992,9 +962,11 @@ class AuthTest extends TestCase
         $this->authz->expects($this->any())->method('isLoggedOut')->willReturn(false);
         $this->authz->expects($this->atLeastOnce())->method('user')->willReturn($user);
 
-        $this->setPrivateProperty($this->service, 'timestamp', new \DateTimeImmutable('2020-01-01T00:00:00+00:00'));
+        $this->inContextOf($this->service, function ($service) {
+            $service->timestamp = new \DateTimeImmutable('2020-01-01T00:00:00+00:00');
+        });
 
-        $service = $this->service->withMFA(function($mfaUser, $mfaCode) use ($user): bool  {
+        $service = $this->service->withMFA(function ($mfaUser, $mfaCode) use ($user): bool {
             $this->assertSame($user, $mfaUser);
             $this->assertSame("123890", $mfaCode);
 
@@ -1015,7 +987,7 @@ class AuthTest extends TestCase
         $this->assertEquals(new \DateTimeImmutable('2020-01-01T00:00:00+00:00'), $service->time());
     }
 
-    public function testMfaWhenLoggedOut()
+    public function testMfaWhenLoggedOut(): void
     {
         //<editor-fold desc="[prepare mocks]">
         $this->authz->expects($this->any())->method('isLoggedIn')->willReturn(false);
@@ -1032,29 +1004,17 @@ class AuthTest extends TestCase
         $service->mfa("123890");
     }
 
-    public function mfaUserProvider()
+    public function testMfaWithInvalidCode(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
-        $partial = new PartiallyLoggedIn($user);
 
-        return [
-            'partial' => [$partial, $user],
-            'full'    => [$user, $user],
-        ];
-    }
-
-    /**
-     * @dataProvider mfaUserProvider
-     */
-    public function testMfaWithInvalidCode($authzUser, $user)
-    {
         //<editor-fold desc="[prepare mocks]">
         $this->authz->expects($this->any())->method('isLoggedIn')->willReturn(false);
         $this->authz->expects($this->any())->method('isPartiallyLoggedIn')->willReturn(true);
         $this->authz->expects($this->any())->method('isLoggedOut')->willReturn(false);
-        $this->authz->expects($this->atLeastOnce())->method('user')->willReturn($authzUser);
+        $this->authz->expects($this->atLeastOnce())->method('user')->willReturn($user);
 
-        $service = $this->service->withMFA(function($mfaUser, $mfaCode) use ($user): bool  {
+        $service = $this->service->withMFA(function ($mfaUser, $mfaCode) use ($user): bool {
             $this->assertSame($user, $mfaUser);
             $this->assertSame("000000", $mfaCode);
 
@@ -1077,12 +1037,46 @@ class AuthTest extends TestCase
         $service->mfa("000000");
     }
 
-    public function testMfaCancelLogin()
+    public function testMfaWithInvalidCodeWhenPartiallyLoggedIn(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
         $partial = new PartiallyLoggedIn($user);
 
-        $service = $this->service->withMFA(function($mfaUser, $mfaCode) use ($user): bool  {
+        //<editor-fold desc="[prepare mocks]">
+        $this->authz->expects($this->any())->method('isLoggedIn')->willReturn(false);
+        $this->authz->expects($this->any())->method('isPartiallyLoggedIn')->willReturn(true);
+        $this->authz->expects($this->any())->method('isLoggedOut')->willReturn(false);
+        $this->authz->expects($this->atLeastOnce())->method('user')->willReturn($partial);
+
+        $service = $this->service->withMFA(function ($mfaUser, $mfaCode) use ($user): bool {
+            $this->assertSame($user, $mfaUser);
+            $this->assertSame("000000", $mfaCode);
+
+            return false;
+        });
+
+        $this->dispatcher->expects($this->never())->method('dispatch');
+        $this->storage->expects($this->never())->method('getContextForUser');
+
+        $this->logger->expects($this->once())->method('debug')
+            ->with("MFA verification failed", ['user' => '42']);
+
+        $this->session->expects($this->never())->method('persist');
+        //</editor-fold>
+
+        $this->expectException(LoginException::class);
+        $this->expectExceptionMessage('Invalid MFA');
+        $this->expectExceptionCode(LoginException::INVALID_CREDENTIALS);
+
+        $service->mfa("000000");
+    }
+
+    public function testMfaCancelLogin(): void
+    {
+        $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
+        $partial = new PartiallyLoggedIn($user);
+
+        $service = $this->service->withMFA(function ($mfaUser, $mfaCode) use ($user): bool {
             $this->assertSame($user, $mfaUser);
             $this->assertSame("123890", $mfaCode);
 
@@ -1118,14 +1112,16 @@ class AuthTest extends TestCase
     }
 
 
-    public function testSetContext()
+    public function testSetContext(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
         $context = $this->createConfiguredMock(Context::class, ['getAuthId' => 'foo']);
 
         //<editor-fold desc="[prepare mocks]">
         $timestamp = new \DateTimeImmutable('2020-01-01T00:00:00+00:00');
-        $this->setPrivateProperty($this->service, 'timestamp', $timestamp);
+        $this->inContextOf($this->service, function ($service) use ($timestamp) {
+            $service->timestamp = $timestamp;
+        });
 
         $this->authz->expects($this->any())->method('isLoggedIn')->willReturn(true);
         $this->authz->expects($this->any())->method('user')->willReturn($user);
@@ -1141,7 +1137,7 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    public function testClearContext()
+    public function testClearContext(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
 
@@ -1160,7 +1156,7 @@ class AuthTest extends TestCase
         $this->assertSame($newAuthz, $this->service->authz());
     }
 
-    public function testRecalc()
+    public function testRecalc(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthId' => '42', 'getAuthChecksum' => 'abc']);
         $context = $this->createConfiguredMock(Context::class, ['getAuthId' => 'foo']);
@@ -1180,7 +1176,7 @@ class AuthTest extends TestCase
         $this->service->recalc();
     }
 
-    public function testRecalcWithoutUser()
+    public function testRecalcWithoutUser(): void
     {
         //<editor-fold desc="[prepare mocks]">
         $this->authz->expects($this->once())->method('recalc')->willReturnSelf();
@@ -1197,7 +1193,7 @@ class AuthTest extends TestCase
     }
 
 
-    public function testForUser()
+    public function testForUser(): void
     {
         $user = $this->createMock(User::class);
         $newAuthz = $this->createMock(Authz::class);
@@ -1210,7 +1206,7 @@ class AuthTest extends TestCase
         $this->assertSame($this->authz, $this->service->authz()); // Not modified
     }
 
-    public function testInContextOf()
+    public function testInContextOf(): void
     {
         $context = $this->createMock(Context::class);
         $newAuthz = $this->createMock(Authz::class);
@@ -1223,7 +1219,7 @@ class AuthTest extends TestCase
         $this->assertSame($this->authz, $this->service->authz()); // Not modified
     }
 
-    public function testOutOfContext()
+    public function testOutOfContext(): void
     {
         $newAuthz = $this->createMock(Authz::class);
 
@@ -1236,7 +1232,7 @@ class AuthTest extends TestCase
     }
 
 
-    public function testConfirm()
+    public function testConfirm(): void
     {
         $newConfirmation = $this->createMock(Confirmation::class);
         $newConfirmation->expects($this->never())->method($this->anything());

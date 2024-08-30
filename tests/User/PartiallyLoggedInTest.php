@@ -7,18 +7,15 @@ namespace Jasny\Auth\Tests\User;
 use Jasny\Auth\ContextInterface as Context;
 use Jasny\Auth\UserInterface as User;
 use Jasny\Auth\User\PartiallyLoggedIn;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
-/**
- * @covers \Jasny\Auth\User\PartiallyLoggedIn
- */
+#[CoversClass(PartiallyLoggedIn::class)]
 class PartiallyLoggedInTest extends TestCase
 {
     protected PartiallyLoggedIn $wrapper;
-
-    /** @var User&MockObject  */
-    protected $user;
+    protected User & MockObject $user;
 
     public function setUp(): void
     {

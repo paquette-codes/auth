@@ -21,7 +21,7 @@ class BearerAuth implements SessionInterface
     {
         $this->idFormat = $idFormat;
         $this->header = isset($request)
-            ? ($request->getHeaderLine('Authorization') ?? '')
+            ? ($request->getHeaderLine('Authorization') ?: '')
             : ($_SERVER['HTTP_AUTHORIZATION'] ?? '');
     }
 

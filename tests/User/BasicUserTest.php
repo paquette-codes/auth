@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Jasny\Auth\Tests\User;
 
 use Jasny\Auth\User\BasicUser;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Jasny\Auth\User\BasicUser
- */
+#[CoversClass(BasicUser::class)]
 class BasicUserTest extends TestCase
 {
     public function testFromData()
@@ -24,24 +24,20 @@ class BasicUserTest extends TestCase
         $this->assertInstanceOf(BasicUser::class, $user);
 
         $this->assertEquals(42, $user->id);
-        $this->assertObjectHasAttribute('username', $user);
+        $this->assertObjectHasProperty('username', $user);
         $this->assertEquals('john', $user->username);
         $this->assertEquals('admin', $user->role);
 
         return $user;
     }
 
-    /**
-     * @depends testFromData
-     */
+    #[Depends('testFromData')]
     public function testGetAuthId(BasicUser $user)
     {
         $this->assertEquals('42', $user->getAuthId());
     }
 
-    /**
-     * @depends testFromData
-     */
+    #[Depends('testFromData')]
     public function testVerifyPassword(BasicUser $user)
     {
         $this->assertTrue($user->verifyPassword('open'));
@@ -50,9 +46,7 @@ class BasicUserTest extends TestCase
         $this->assertFalse($user->verifyPassword(''));
     }
 
-    /**
-     * @depends testFromData
-     */
+    #[Depends('testFromData')]
     public function testRequiresMfa(BasicUser $user)
     {
         $this->assertFalse($user->requiresMfa());
@@ -73,9 +67,7 @@ class BasicUserTest extends TestCase
         );
     }
 
-    /**
-     * @depends testFromData
-     */
+    #[Depends('testFromData')]
     public function testGetAuthRole(BasicUser $user)
     {
         $this->assertEquals('admin', $user->getAuthRole());

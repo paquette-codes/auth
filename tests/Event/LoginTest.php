@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace Jasny\Auth\Tests\Event;
 
 use Jasny\Auth\Auth;
+use Jasny\Auth\Event\AbstractEvent;
+use Jasny\Auth\Event\CancellableTrait;
 use Jasny\Auth\Event\Login;
 use Jasny\Auth\UserInterface as User;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Jasny\Auth\Event\Login
- * @covers \Jasny\Auth\Event\AbstractEvent
- * @covers \Jasny\Auth\Event\CancellableTrait
- */
+#[CoversClass(Login::class)]
+#[CoversClass(AbstractEvent::class)]
+#[CoversClass(CancellableTrait::class)]
 class LoginTest extends TestCase
 {
     public function testGetters()

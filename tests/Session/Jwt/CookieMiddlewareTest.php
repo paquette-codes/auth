@@ -6,14 +6,13 @@ namespace Jasny\Auth\Tests\Session\Jwt;
 
 use Jasny\Auth\Session\Jwt\CookieMiddleware;
 use Jasny\Auth\Session\Jwt\CookieValue;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as ServerRequest;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 
-/**
- * @covers \Jasny\Auth\Session\Jwt\CookieMiddleware
- */
+#[CoversClass(CookieMiddleware::class)]
 class CookieMiddlewareTest extends TestCase
 {
     protected CookieMiddleware $middleware;

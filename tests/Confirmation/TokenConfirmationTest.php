@@ -10,21 +10,16 @@ use Jasny\Auth\Confirmation\TokenConfirmation;
 use Jasny\Auth\Storage\TokenStorageInterface;
 use Jasny\Auth\StorageInterface;
 use Jasny\Auth\UserInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-/**
- * @covers \Jasny\Auth\Confirmation\TokenConfirmation
- */
+#[CoversClass(TokenConfirmation::class)]
 class TokenConfirmationTest extends TestCase
 {
-    /** @var MockObject&TokenStorageInterface */
-    protected $storage;
-
-    /** @var MockObject&LoggerInterface */
-    protected $logger;
-
+    protected TokenStorageInterface & MockObject $storage;
+    protected LoggerInterface & MockObject $logger;
     protected TokenConfirmation $service;
 
     public function setUp(): void

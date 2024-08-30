@@ -7,12 +7,11 @@ namespace Jasny\Auth\Tests\Confirmation;
 use Jasny\Auth\Confirmation\NoConfirmation;
 use Jasny\Auth\StorageInterface;
 use Jasny\Auth\UserInterface as User;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-/**
- * @covers \Jasny\Auth\Confirmation\NoConfirmation
- */
+#[CoversClass(NoConfirmation::class)]
 class NoConfirmationTest extends TestCase
 {
     protected NoConfirmation $service;

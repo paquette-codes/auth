@@ -19,7 +19,7 @@ interface ConfirmationInterface
      * @param Storage $storage
      * @return static
      */
-    public function withStorage(Storage $storage);
+    public function withStorage(Storage $storage): self;
 
     /**
      * Get copy with logger.
@@ -27,7 +27,7 @@ interface ConfirmationInterface
      * @param Logger $logger
      * @return static
      */
-    public function withLogger(Logger $logger);
+    public function withLogger(Logger $logger): self;
 
     /**
      * Create a copy of this service with a specific subject.
@@ -35,7 +35,7 @@ interface ConfirmationInterface
      * @param string $subject
      * @return static
      */
-    public function withSubject(string $subject);
+    public function withSubject(string $subject): self;
 
     /**
      * Generate a confirmation token.

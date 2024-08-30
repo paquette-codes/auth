@@ -7,5 +7,4 @@ parameters:
         - "/^Variable property access/"
         - "/^Parameter #2 \\$value of method .+::withProperty\\(\\) expects string, .+ given/"
         - "/^Constructor of class .+ has an unused parameter \\$_+/"
-includes:
-  	- vendor/phpstan/phpstan-strict-rules/rules.neon
+

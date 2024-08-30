@@ -9,29 +9,25 @@ use Jasny\Auth\Confirmation\InvalidTokenException;
 use Jasny\Auth\StorageInterface as Storage;
 use Jasny\Auth\UserInterface as User;
 use Jasny\PHPUnit\CallbackMockTrait;
-use Jasny\PHPUnit\ExpectWarningTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LoggerInterface as Logger;
 
-/**
- * @covers \Jasny\Auth\Confirmation\HashidsConfirmation
- */
+#[CoversClass(HashidsConfirmation::class)]
 class HashidsConfirmationTest extends TestCase
 {
-    use ExpectWarningTrait;
     use CallbackMockTrait;
 
     protected const TOKEN = 'o1rLAl8m28S8v34QK8V7So8nrKOrBVFjdZgOkzmguBMNzQvyjXIn6ma1Ro9Bh8L7Mk1M0';
     protected const STD_HEX = '43b87e6e92e84566b79f6f16ee4c982accec20d16bc3e46c8656bcef93dafba6202001011200003432';
     protected const OLD_HEX = '8930d6fab596adc131412a8309d5391611047dcf9dad6e106ccbb5b8ee2ae7fb202001011200003432';
 
-    /** @var User&MockObject */
-    protected $user;
-
-    /** @var Logger&MockObject */
-    protected $logger;
+    protected User & MockObject $user;
+    protected Logger & MockObject $logger;
 
     public function setUp(): void
     {
@@ -46,14 +42,14 @@ class HashidsConfirmationTest extends TestCase
         CarbonImmutable::setTestNow(null);
     }
 
-    public function expectedContext($uid = null, $expire = null): array
+    public function expectedContext(?string $uid = null, ?string $expire = null): array
     {
         return ['subject' => 'test', 'token' => substr(self::TOKEN, 0, 8) . '...']
             + ($uid !== null ? ['user' => $uid] : [])
             + ($expire !== null ? ['expire' => $expire] : []);
     }
 
-    public function testGetToken()
+    public function testGetToken(): void
     {
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method($this->anything());
@@ -72,7 +68,7 @@ class HashidsConfirmationTest extends TestCase
         $this->assertEquals(self::TOKEN, $token);
     }
 
-    public function testGetTokenWithCustomUidEncoding()
+    public function testGetTokenWithCustomUidEncoding(): void
     {
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method($this->anything());
@@ -97,7 +93,7 @@ class HashidsConfirmationTest extends TestCase
         $this->assertEquals(self::TOKEN, $token);
     }
 
-    public function testGetTokenWithInvalidUid()
+    public function testGetTokenWithInvalidUid(): void
     {
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method($this->anything());
@@ -142,7 +138,7 @@ class HashidsConfirmationTest extends TestCase
             ->withSubject('test');
     }
 
-    public function testFrom()
+    public function testFrom(): void
     {
         $confirm = $this->createService(self::STD_HEX, $this->user);
 
@@ -152,7 +148,7 @@ class HashidsConfirmationTest extends TestCase
         $this->assertSame($this->user, $confirm->from(self::TOKEN));
     }
 
-    public function testFromWithCustomUidEncoding()
+    public function testFromWithCustomUidEncoding(): void
     {
         $hex = substr(self::STD_HEX, 0, -4) . '2a';
 
@@ -168,7 +164,7 @@ class HashidsConfirmationTest extends TestCase
         $this->assertSame($this->user, $confirm->from(self::TOKEN));
     }
 
-    public function testFromDeletedUser()
+    public function testFromDeletedUser(): void
     {
         $confirm = $this->createService(self::STD_HEX, null);
 
@@ -181,7 +177,7 @@ class HashidsConfirmationTest extends TestCase
         $confirm->from(self::TOKEN);
     }
 
-    public function testFromInvalidChecksum()
+    public function testFromInvalidChecksum(): void
     {
         $hex = hash('sha256', '') . '20200101000000' . '3432';
 
@@ -196,7 +192,7 @@ class HashidsConfirmationTest extends TestCase
         $confirm->from(self::TOKEN);
     }
 
-    public function testFromInvalidToken()
+    public function testFromInvalidToken(): void
     {
         $hex = 'nop';
 
@@ -210,7 +206,7 @@ class HashidsConfirmationTest extends TestCase
         $confirm->from(self::TOKEN);
     }
 
-    public function testFromInvalidUid()
+    public function testFromInvalidUid(): void
     {
         $hex = hash('sha256', '') . '20200101000000' . 'qq';
 
@@ -228,7 +224,7 @@ class HashidsConfirmationTest extends TestCase
         $confirm->from(self::TOKEN);
     }
 
-    public function testFromTokenWithInvalidExpireDate()
+    public function testFromTokenWithInvalidExpireDate(): void
     {
         $hex = hash('sha256', '') . '99999999000000' . '3432';
 
@@ -242,7 +238,7 @@ class HashidsConfirmationTest extends TestCase
         $confirm->from(self::TOKEN);
     }
 
-    public function testFromExpiredToken()
+    public function testFromExpiredToken(): void
     {
         $hex = '3e912b083116f9063a7e0f6fb67179c024d4419aba564f4d898b0c033dc3285b' . '20191101120000' . '3432';
 
@@ -256,7 +252,7 @@ class HashidsConfirmationTest extends TestCase
         $confirm->from(self::TOKEN);
     }
 
-    public function testCreateHashIdsWithCallback()
+    public function testCreateHashIdsWithCallback(): void
     {
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method('fetchUserById');
@@ -277,10 +273,8 @@ class HashidsConfirmationTest extends TestCase
     }
 
 
-    /**
-     * @group hashids
-     */
-    public function testCreateHashIds()
+    #[Group('hashids')]
+    public function testCreateHashIds(): void
     {
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method('fetchUserById');
@@ -299,11 +293,9 @@ class HashidsConfirmationTest extends TestCase
     }
 
 
-    /**
-     * @group hashids
-     * @coversNothing
-     */
-    public function testGetTokenWithRealHashids()
+    #[Group('hashids')]
+    #[CoversNothing]
+    public function testGetTokenWithRealHashids(): void
     {
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method($this->anything());
@@ -318,11 +310,9 @@ class HashidsConfirmationTest extends TestCase
         $this->assertEquals($expectedToken, $token);
     }
 
-    /**
-     * @group hashids
-     * @coversNothing
-     */
-    public function testFromWithRealHashids()
+    #[Group('hashids')]
+    #[CoversNothing]
+    public function testFromWithRealHashids(): void
     {
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->once())->method('fetchUserById')
@@ -338,11 +328,9 @@ class HashidsConfirmationTest extends TestCase
         $this->assertSame($this->user, $user);
     }
 
-    /**
-     * @group hashids
-     * @coversNothing
-     */
-    public function testFromOtherSubjectWithRealHashids()
+    #[Group('hashids')]
+    #[CoversNothing]
+    public function testFromOtherSubjectWithRealHashids(): void
     {
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method('fetchUserById');

@@ -19,6 +19,7 @@ class TokenConfirmation implements ConfirmationInterface
 {
     use Immutable\With;
 
+    /** @var int<1, max> */
     protected int $numberOfBytes;
 
     protected \Closure $encode;
@@ -36,8 +37,12 @@ class TokenConfirmation implements ConfirmationInterface
      */
     public function __construct(int $numberOfBytes = 16, ?callable $encode = null)
     {
+        if ($numberOfBytes < 1) {
+            throw new \InvalidArgumentException("Number of bytes must be at least 1");
+        }
+
         $this->numberOfBytes = $numberOfBytes;
-        $this->encode = \Closure::fromCallable($encode ?? [__CLASS__, 'encode']);
+        $this->encode = ($encode ?? [__CLASS__, 'encode'])(...);
 
         $this->logger = new NullLogger();
     }
@@ -48,7 +53,7 @@ class TokenConfirmation implements ConfirmationInterface
      * @param Storage $storage
      * @return static
      */
-    public function withStorage(Storage $storage): self
+    public function withStorage(Storage $storage): static
     {
         if (!$storage instanceof TokenStorageInterface) {
             throw new \InvalidArgumentException("Storage object needs to implement " . TokenStorageInterface::class);
@@ -60,7 +65,7 @@ class TokenConfirmation implements ConfirmationInterface
     /**
      * @inheritDoc
      */
-    public function withLogger(Logger $logger)
+    public function withLogger(Logger $logger): static
     {
         return $this->withProperty('logger', $logger);
     }
@@ -68,7 +73,7 @@ class TokenConfirmation implements ConfirmationInterface
     /**
      * @inheritDoc
      */
-    public function withSubject(string $subject)
+    public function withSubject(string $subject): static
     {
         return $this->withProperty('subject', $subject);
     }

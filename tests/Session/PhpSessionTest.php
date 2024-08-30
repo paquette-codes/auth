@@ -4,11 +4,10 @@ namespace Jasny\Auth\Tests\Session;
 
 use Jasny\Auth\Session\PhpSession;
 use Jasny\PHPUnit\ExpectWarningTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Jasny\Auth\Session\PhpSession
- */
+#[CoversClass(PhpSession::class)]
 class PhpSessionTest extends TestCase
 {
     use ExpectWarningTrait;

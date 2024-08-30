@@ -2,28 +2,28 @@
 
 namespace Jasny\Auth\Tests\Authz;
 
+use DomainException;
 use Jasny\Auth\AuthException;
+use Jasny\Auth\Authz\StateTrait;
 use Jasny\Auth\AuthzInterface;
 use Jasny\Auth\ContextInterface as Context;
 use Jasny\Auth\User\PartiallyLoggedIn;
 use Jasny\Auth\UserInterface as User;
 use Jasny\Auth\Authz\Levels;
 use Jasny\PHPUnit\ExpectWarningTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
+use UnexpectedValueException;
 
-/**
- * @covers \Jasny\Auth\Authz\Levels
- * @covers \Jasny\Auth\Authz\StateTrait
- */
+#[CoversClass(Levels::class)]
+#[CoversClass(StateTrait::class)]
 class LevelsTest extends TestCase
 {
     use ExpectWarningTrait;
     
-    /**
-     * @var Levels&MockObject
-     */
-    protected $authz;
+    protected Levels $authz;
     
     public function setUp(): void
     {
@@ -34,12 +34,12 @@ class LevelsTest extends TestCase
         ]);
     }
 
-    public function testGetAvailableRoles()
+    public function testGetAvailableRoles(): void
     {
         $this->assertEquals(['user', 'mod', 'admin'], $this->authz->getAvailableRoles());
     }
 
-    public function testNoUser()
+    public function testNoUser(): void
     {
         $this->assertFalse($this->authz->isLoggedIn());
         $this->assertFalse($this->authz->isPartiallyLoggedIn());
@@ -49,7 +49,7 @@ class LevelsTest extends TestCase
         $this->authz->user();
     }
 
-    public function testUser()
+    public function testUser(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthRole' => 'user']);
         $userAuthz = $this->authz->forUser($user);
@@ -64,7 +64,7 @@ class LevelsTest extends TestCase
         $this->assertSame($user, $userAuthz->user());
     }
 
-    public function testPartiallyLoggedIn()
+    public function testPartiallyLoggedIn(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthRole' => 'user']);
         $partial = new PartiallyLoggedIn($user);
@@ -79,27 +79,27 @@ class LevelsTest extends TestCase
         $this->assertSame($partial, $userAuthz->user());
     }
 
-    public function testWithUnknownUserRole()
+    public function testWithUnknownUserRole(): void
     {
         $user = $this->createConfiguredMock(User::class, ['getAuthRole' => 'foo', 'getAuthId' => '42']);
 
-        $this->expectException(\DomainException::class);
+        $this->expectException(DomainException::class);
         $this->expectExceptionMessage("Authorization level 'foo' isn't defined (uid:42)");
 
         $this->authz = $this->authz->forUser($user);
     }
 
-    public function testWithInvalidUserRole()
+    public function testWithInvalidUserRole(): void
     {
         $user = $this->createMock(User::class);
         $user->expects($this->any())->method('getAuthRole')->willReturn(['user', 'mod']);
 
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(UnexpectedValueException::class);
 
         $this->authz = $this->authz->forUser($user);
     }
 
-    public function testInContextOf()
+    public function testInContextOf(): Levels
     {
         $this->assertNull($this->authz->context());
 
@@ -113,10 +113,7 @@ class LevelsTest extends TestCase
         return $contextAuthz;
     }
 
-    /**
-     * @depends testInContextOf
-     */
-    public function testOutOfContext(AuthzInterface $contextAuthz)
+    #[Depends('testInContextOf')] public function testOutOfContext(AuthzInterface $contextAuthz)
     {
         $noContextAuthz = $contextAuthz->outOfContext();
 
@@ -126,12 +123,12 @@ class LevelsTest extends TestCase
     }
 
     
-    public function testIsWithoutUser()
+    public function testIsWithoutUser(): void
     {
         $this->assertFalse($this->authz->is('user'));
     }
     
-    public function roleProvider()
+    public static function roleProvider(): array
     {
         return [
             'user'  => ['user', ['user' => true, 'mod' => false, 'admin' => false]],
@@ -145,13 +142,8 @@ class LevelsTest extends TestCase
         ];
     }
     
-    /**
-     * @dataProvider roleProvider
-     * 
-     * @param string|array $role
-     * @param array        $expect
-     */
-    public function testIsWithUser($role, array $expect)
+    #[DataProvider('roleProvider')]
+    public function testIsWithUser(string|int $role, array $expect)
     {
         $user = $this->createMock(User::class);
         $user->method('getAuthRole')->willReturn($role);
@@ -163,14 +155,14 @@ class LevelsTest extends TestCase
         $this->assertSame($expect['admin'], $this->authz->is('admin'));
     }
     
-    public function testIsWithUnknownRole()
+    public function testIsWithUnknownRole(): void
     {
         $this->expectWarningMessage("Unknown authz role 'foo'");
         $this->assertFalse($this->authz->is('foo'));
     }
 
 
-    public function testRecalc()
+    public function testRecalc(): void
     {
         $user = $this->createMock(User::class);
         $user->expects($this->exactly(2))->method('getAuthRole')
@@ -188,7 +180,7 @@ class LevelsTest extends TestCase
         $this->assertTrue($updatedAuthz->is('mod')); // admin supersedes dev
     }
 
-    public function testRecalcWithoutAnyChange()
+    public function testRecalcWithoutAnyChange(): void
     {
         $user = $this->createMock(User::class);
         $user->expects($this->exactly(2))->method('getAuthRole')
@@ -200,7 +192,7 @@ class LevelsTest extends TestCase
         $this->assertSame($this->authz, $updatedAuthz);
     }
 
-    public function testRecalcWithoutUser()
+    public function testRecalcWithoutUser(): void
     {
         $this->authz = $this->authz->forUser(null);
         $updatedAuthz = $this->authz->recalc();

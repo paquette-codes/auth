@@ -3,12 +3,11 @@
 namespace Jasny\Auth\Tests\Session;
 
 use Jasny\Auth\Session\SessionObject;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 
-/**
- * @covers \Jasny\Auth\Session\SessionObject
- */
+#[CoversClass(SessionObject::class)]
 class SessionObjectTest extends TestCase
 {
     protected \ArrayObject $session;

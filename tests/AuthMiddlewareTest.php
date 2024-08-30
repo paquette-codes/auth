@@ -7,6 +7,7 @@ use Jasny\Auth\AuthzInterface as Authz;
 use Jasny\Auth\AuthMiddleware;
 use Jasny\Auth\Session\SessionInterface;
 use Jasny\PHPUnit\CallbackMockTrait;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface as ServerRequest;
@@ -15,18 +16,13 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\StreamInterface as Stream;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 
-/**
- * @covers \Jasny\Auth\AuthMiddleware
- */
+#[CoversClass(AuthMiddleware::class)]
 class AuthMiddlewareTest extends TestCase
 {
     use CallbackMockTrait;
 
-    /** @var Authz&MockObject */
-    protected $authz;
-    /** @var ResponseFactory&MockObject */
-    protected $responseFactory;
-
+    protected Authz & MockObject $authz;
+    protected ResponseFactory & MockObject $responseFactory;
     protected AuthMiddleware $middleware;
 
     public function setUp(): void
